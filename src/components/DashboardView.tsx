@@ -49,36 +49,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     totalActiveTutors: tutors.filter(t => t.status === 'Aktif').length,
     totalSessionsThisMonth: attendances.length,
     grossIncomeThisMonth: finance
-      .filter(f => f.type === 'Pemasukan')
+      .filter(f => f.type === 'Pemasukan' && f.category === 'SPP Siswa')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     netManagementProfitThisMonth: finance
-      .filter(f => f.type === 'Pemasukan')
+      .filter(f => f.type === 'Pemasukan' && f.category === 'Fee Manajemen')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0) -
       finance
-      .filter(f => f.type === 'Pengeluaran')
+      .filter(f => f.type === 'Pengeluaran' && f.category === 'Operasional')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     pendingApprovals: approvals.filter(a => a.status === 'Pending').length,
     unpaidInvoices: invoices.filter(i => i.status !== 'Lunas').length,
     monthlyRevenue: finance
-      .filter(f => f.type === 'Pemasukan')
+      .filter(f => f.type === 'Pemasukan' && f.category === 'SPP Siswa')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     monthlyTutorSalaries: finance
       .filter(f => f.type === 'Pengeluaran' && f.category === 'Gaji Tentor')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
-    monthlyManagementFees: attendances.length > 0
-      ? attendances.reduce((acc, att) => {
-          const st = students.find(s => s.id === att.studentId);
-          return acc + (st?.managementMarginNominal !== undefined ? Number(st.managementMarginNominal) : 10000);
-        }, 0)
-      : (students.filter(s => s.status === 'Aktif').length * 10000),
+    monthlyManagementFees: finance
+      .filter(f => f.type === 'Pemasukan' && f.category === 'Fee Manajemen')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     monthlyOperationalExpenses: finance
       .filter(f => f.type === 'Pengeluaran' && f.category === 'Operasional')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     monthlyNetProfit: finance
-      .filter(f => f.type === 'Pemasukan')
+      .filter(f => f.type === 'Pemasukan' && f.category === 'Fee Manajemen')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0) -
       finance
-      .filter(f => f.type === 'Pengeluaran')
+      .filter(f => f.type === 'Pengeluaran' && f.category === 'Operasional')
       .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
     unpaidInvoicesAmount: invoices
       .filter(i => i.status !== 'Lunas')

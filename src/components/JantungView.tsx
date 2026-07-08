@@ -160,6 +160,128 @@ export const JantungView: React.FC<JantungViewProps> = ({
 
     try {
       await persistDatabaseUpdate(db => {
+        // Find associated records
+        const targetStudent = db.students.find(s => s.id === editingAttendance.studentId);
+        const targetTutor = db.tutors.find(t => t.id === editingAttendance.tutorId);
+        const targetSchedule = db.schedules.find(s => s.id === editingAttendance.scheduleId);
+
+        const honorRate = targetSchedule?.sessionRate || targetTutor?.ratePerSession || 40000;
+        const marginRate = targetStudent?.managementMarginNominal || 10000;
+
+        let updatedFinance = db.finance || [];
+        let updatedSalaries = db.salaries || [];
+        let updatedStudents = db.students;
+
+        // 1. REVERSE OLD EFFECT IF IT WAS HADIR
+        if (editingAttendance.status === 'Hadir') {
+          // Remove old finance records for this attendanceId
+          updatedFinance = updatedFinance.filter(f => f.attendanceId !== editingAttendance.id);
+
+          // Deduct old salary
+          const oldMonthYear = editingAttendance.date.substring(0, 7);
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingAttendance.tutorId && s.monthYear === oldMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = Math.max(0, (existing.totalAttendanceRate || 0) - honorRate);
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          }
+
+          // Refund student quota (+1)
+          updatedStudents = updatedStudents.map(s => {
+            if (s.id === editingAttendance.studentId) {
+              const rem = s.remainingSessions + 1;
+              return {
+                ...s,
+                remainingSessions: rem,
+                packageStatus: (rem <= 0 ? 'Habis' : rem <= 2 ? 'Hampir Habis' : 'Aktif') as any
+              };
+            }
+            return s;
+          });
+        }
+
+        // 2. APPLY NEW EFFECT IF IT IS HADIR
+        if (attStatus === 'Hadir') {
+          // Add new finance records
+          const currentDateStr = attDate;
+          const newMonthYear = attDate.substring(0, 7);
+
+          const salaryExpenseFin: Finance = {
+            id: `fin_sal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            type: 'Pengeluaran',
+            category: 'Gaji Tentor',
+            amount: honorRate,
+            date: currentDateStr,
+            description: `Honor Mengajar Tentor (${targetTutor?.name || 'Tentor'}) - Siswa ${targetStudent?.name || 'Siswa'} (${currentDateStr}) [REVISI]`,
+            tutorId: editingAttendance.tutorId,
+            studentId: editingAttendance.studentId,
+            attendanceId: editingAttendance.id,
+            createdBy: 'SYSTEM_AUTO_RECAP',
+            createdAt: new Date().toISOString()
+          };
+
+          const marginIncomeFin: Finance = {
+            id: `fin_fee_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            type: 'Pemasukan',
+            category: 'Fee Manajemen',
+            amount: marginRate,
+            date: currentDateStr,
+            description: `Fee Margin Manajemen Sesi - ${targetStudent?.name || 'Siswa'} (${currentDateStr}) [REVISI]`,
+            studentId: editingAttendance.studentId,
+            attendanceId: editingAttendance.id,
+            createdBy: 'SYSTEM_AUTO_RECAP',
+            createdAt: new Date().toISOString()
+          };
+
+          updatedFinance = [salaryExpenseFin, marginIncomeFin, ...updatedFinance];
+
+          // Add to salary
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingAttendance.tutorId && s.monthYear === newMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = (existing.totalAttendanceRate || 0) + honorRate;
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          } else {
+            const newTutorSalary: TutorSalary = {
+              id: `sal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              tutorId: editingAttendance.tutorId,
+              monthYear: newMonthYear,
+              totalAttendanceRate: honorRate,
+              cancellationCompensation: 0,
+              bonus: 0,
+              deductions: 0,
+              totalSalary: honorRate,
+              paymentStatus: 'Pending',
+              createdAt: new Date().toISOString().substring(0, 10)
+            };
+            updatedSalaries = [newTutorSalary, ...updatedSalaries];
+          }
+
+          // Deduct student quota (-1)
+          updatedStudents = updatedStudents.map(s => {
+            if (s.id === editingAttendance.studentId) {
+              const rem = Math.max(0, s.remainingSessions - 1);
+              return {
+                ...s,
+                remainingSessions: rem,
+                packageStatus: (rem <= 0 ? 'Habis' : rem <= 2 ? 'Hampir Habis' : 'Aktif') as any
+              };
+            }
+            return s;
+          });
+        }
+
+        // 3. UPDATE ATTENDANCE STATE
         const nextAttendances = db.attendances.map(a => {
           if (a.id === editingAttendance.id) {
             return {
@@ -174,31 +296,16 @@ export const JantungView: React.FC<JantungViewProps> = ({
           return a;
         });
 
-        // If status changed from/to Hadir, recalculate remaining session quota of student
-        let nextStudents = db.students;
-        if (editingAttendance.status !== attStatus) {
-          nextStudents = db.students.map(s => {
-            if (s.id === editingAttendance.studentId) {
-              let rem = s.remainingSessions;
-              if (editingAttendance.status === 'Hadir' && attStatus !== 'Hadir') {
-                rem += 1; // Refund because it's no longer present
-              } else if (editingAttendance.status !== 'Hadir' && attStatus === 'Hadir') {
-                rem = Math.max(0, rem - 1); // Deduct because it's now present
-              }
-              return {
-                ...s,
-                remainingSessions: rem,
-                packageStatus: (rem <= 0 ? 'Habis' : rem <= 2 ? 'Hampir Habis' : 'Aktif') as any
-              };
-            }
-            return s;
-          });
-        }
-
-        return { ...db, attendances: nextAttendances, students: nextStudents };
+        return {
+          ...db,
+          attendances: nextAttendances,
+          students: updatedStudents,
+          finance: updatedFinance,
+          salaries: updatedSalaries
+        };
       });
 
-      showAlert('success', 'Perubahan absensi berhasil disimpan!');
+      showAlert('success', 'Perubahan absensi dan penyesuaian keuangan berhasil disimpan!');
       setEditingAttendance(null);
       onRefresh();
     } catch (err) {
@@ -214,9 +321,26 @@ export const JantungView: React.FC<JantungViewProps> = ({
       async () => {
         try {
           await persistDatabaseUpdate(db => {
+            let updatedSalaries = db.salaries || [];
+            if (fin.category === 'Gaji Tentor' && fin.tutorId) {
+              const monthYearStr = fin.date.substring(0, 7);
+              const salIdx = updatedSalaries.findIndex(s => s.tutorId === fin.tutorId && s.monthYear === monthYearStr);
+              if (salIdx !== -1) {
+                const existing = updatedSalaries[salIdx];
+                const newRate = Math.max(0, (existing.totalAttendanceRate || 0) - fin.amount);
+                updatedSalaries = [...updatedSalaries];
+                updatedSalaries[salIdx] = {
+                  ...existing,
+                  totalAttendanceRate: newRate,
+                  totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+                };
+              }
+            }
+
             return {
               ...db,
-              finance: db.finance.filter(f => f.id !== fin.id)
+              finance: db.finance.filter(f => f.id !== fin.id),
+              salaries: updatedSalaries
             };
           });
           showAlert('success', 'Transaksi keuangan berhasil dihapus!');
@@ -246,6 +370,54 @@ export const JantungView: React.FC<JantungViewProps> = ({
 
     try {
       await persistDatabaseUpdate(db => {
+        let updatedSalaries = db.salaries || [];
+
+        // 1. REVERSE OLD SALARY EFFECT
+        if (editingFinance.category === 'Gaji Tentor' && editingFinance.tutorId) {
+          const oldMonthYear = editingFinance.date.substring(0, 7);
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingFinance.tutorId && s.monthYear === oldMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = Math.max(0, (existing.totalAttendanceRate || 0) - editingFinance.amount);
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          }
+        }
+
+        // 2. APPLY NEW SALARY EFFECT
+        if (finCategory === 'Gaji Tentor' && editingFinance.tutorId) {
+          const newMonthYear = finDate.substring(0, 7);
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingFinance.tutorId && s.monthYear === newMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = (existing.totalAttendanceRate || 0) + Number(finAmount);
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          } else {
+            const newTutorSalary: TutorSalary = {
+              id: `sal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              tutorId: editingFinance.tutorId,
+              monthYear: newMonthYear,
+              totalAttendanceRate: Number(finAmount),
+              cancellationCompensation: 0,
+              bonus: 0,
+              deductions: 0,
+              totalSalary: Number(finAmount),
+              paymentStatus: 'Pending',
+              createdAt: new Date().toISOString().substring(0, 10)
+            };
+            updatedSalaries = [newTutorSalary, ...updatedSalaries];
+          }
+        }
+
         const updatedFinance = db.finance.map(f => {
           if (f.id === editingFinance.id) {
             return {
@@ -263,7 +435,7 @@ export const JantungView: React.FC<JantungViewProps> = ({
           return f;
         });
 
-        return { ...db, finance: updatedFinance };
+        return { ...db, finance: updatedFinance, salaries: updatedSalaries };
       });
 
       showAlert('success', 'Transaksi keuangan berhasil direvisi!');

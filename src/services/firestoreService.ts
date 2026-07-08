@@ -78,9 +78,7 @@ function checkAndSetQuotaError(error: any) {
     errMsg.includes('quota') || 
     errMsg.includes('exhausted') || 
     errMsg.includes('resource-exhausted') ||
-    errMsg.includes('quota limit exceeded') ||
-    errMsg.includes('timeout') ||
-    errMsg.includes('timed out')
+    errMsg.includes('quota limit exceeded')
   ) {
     if (!isQuotaExceeded) {
       isQuotaExceeded = true;
@@ -89,7 +87,7 @@ function checkAndSetQuotaError(error: any) {
   }
 }
 
-const TIMEOUT_MS = 1200;
+const TIMEOUT_MS = 15000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = TIMEOUT_MS): Promise<T> {
   return Promise.race([

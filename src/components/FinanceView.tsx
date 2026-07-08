@@ -527,6 +527,53 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           nextDb.finance = [newOrUpdatedFin, ...(nextDb.finance || [])];
         }
 
+        // Adjust tutor salary if category is Gaji Tentor
+        let updatedSalaries = nextDb.salaries || [];
+        if (editingFinance.category === 'Gaji Tentor' && editingFinance.tutorId) {
+          const oldMonthYear = editingFinance.date.substring(0, 7);
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingFinance.tutorId && s.monthYear === oldMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = Math.max(0, (existing.totalAttendanceRate || 0) - editingFinance.amount);
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          }
+        }
+
+        if (editFinCategory === 'Gaji Tentor' && editingFinance.tutorId) {
+          const newMonthYear = editFinDate.substring(0, 7);
+          const salIdx = updatedSalaries.findIndex(s => s.tutorId === editingFinance.tutorId && s.monthYear === newMonthYear);
+          if (salIdx !== -1) {
+            const existing = updatedSalaries[salIdx];
+            const newRate = (existing.totalAttendanceRate || 0) + Number(editFinAmount);
+            updatedSalaries = [...updatedSalaries];
+            updatedSalaries[salIdx] = {
+              ...existing,
+              totalAttendanceRate: newRate,
+              totalSalary: newRate + (existing.cancellationCompensation || 0) + (existing.bonus || 0) - (existing.deductions || 0)
+            };
+          } else {
+            const newTutorSalary: TutorSalary = {
+              id: `sal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              tutorId: editingFinance.tutorId,
+              monthYear: newMonthYear,
+              totalAttendanceRate: Number(editFinAmount),
+              cancellationCompensation: 0,
+              bonus: 0,
+              deductions: 0,
+              totalSalary: Number(editFinAmount),
+              paymentStatus: 'Pending',
+              createdAt: new Date().toISOString().substring(0, 10)
+            };
+            updatedSalaries = [newTutorSalary, ...updatedSalaries];
+          }
+        }
+        nextDb.salaries = updatedSalaries;
+
         // 2. If it is linked to an attendance, update the corresponding attendance record's date
         const attId = editingFinance.attendanceId || (isSynthetic ? editingFinance.id.replace('syn-spp-', '').replace('syn-sal-', '').replace('syn-fee-', '') : null);
         if (attId) {
@@ -603,6 +650,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       };
                     }
                     return st;
+                  });
+
+                  // Adjust tutor salary
+                  const sch = (nextDb.schedules || []).find(s => s.id === targetAtt.scheduleId);
+                  const tut = (nextDb.tutors || []).find(t => t.id === targetAtt.tutorId);
+                  const honorRate = sch?.sessionRate || tut?.ratePerSession || 40000;
+                  const monthYearStr = targetAtt.date.substring(0, 7);
+
+                  nextDb.salaries = (nextDb.salaries || []).map(s => {
+                    if (s.tutorId === targetAtt.tutorId && s.monthYear === monthYearStr) {
+                      const newRate = Math.max(0, (s.totalAttendanceRate || 0) - honorRate);
+                      return {
+                        ...s,
+                        totalAttendanceRate: newRate,
+                        totalSalary: newRate + (s.cancellationCompensation || 0) + (s.bonus || 0) - (s.deductions || 0)
+                      };
+                    }
+                    return s;
                   });
                 }
                 // Remove from attendances
