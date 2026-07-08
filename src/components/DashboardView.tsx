@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DashboardStats, Student, Schedule, Approval, Invoice, UserRole, Attendance, Tutor, TutorSalary } from '../types';
+import { DashboardStats, Student, Schedule, Approval, Invoice, UserRole, Attendance, Tutor, TutorSalary, Finance } from '../types';
 import {
   Users, GraduationCap, DollarSign, Wallet, TrendingUp, TrendingDown,
   AlertTriangle, Clock, Calendar, CheckCircle2, ArrowRight, Bell, Sparkles,
@@ -16,6 +16,7 @@ interface DashboardViewProps {
   attendances?: Attendance[];
   tutors?: Tutor[];
   salaries?: TutorSalary[];
+  finance?: Finance[];
   userRole: UserRole;
   currentUserTutorId?: string;
   onNavigate: (tab: any) => void;
@@ -23,7 +24,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  stats,
+  stats: _backendStats,
   students,
   schedules,
   approvals,
@@ -31,6 +32,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   attendances = [],
   tutors = [],
   salaries = [],
+  finance = [],
   userRole,
   currentUserTutorId,
   onNavigate,
@@ -40,6 +42,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [selectedStudentIdForExtra, setSelectedStudentIdForExtra] = useState('');
   const [extraKuotaAmount, setExtraKuotaAmount] = useState<number>(4);
   const [extraKuotaReason, setExtraKuotaReason] = useState('Persiapan Ujian Semester / Pendalaman Materi');
+
+  // Real-time clientside stats computation to bypass backend state resets/restarts
+  const stats: DashboardStats = {
+    totalActiveStudents: students.filter(s => s.status === 'Aktif').length,
+    totalActiveTutors: tutors.filter(t => t.status === 'Aktif').length,
+    totalSessionsThisMonth: attendances.length,
+    grossIncomeThisMonth: finance
+      .filter(f => f.type === 'Pemasukan')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    netManagementProfitThisMonth: finance
+      .filter(f => f.type === 'Pemasukan')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0) -
+      finance
+      .filter(f => f.type === 'Pengeluaran')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    pendingApprovals: approvals.filter(a => a.status === 'Pending').length,
+    unpaidInvoices: invoices.filter(i => i.status !== 'Lunas').length,
+    monthlyRevenue: finance
+      .filter(f => f.type === 'Pemasukan')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    monthlyTutorSalaries: finance
+      .filter(f => f.type === 'Pengeluaran' && f.category === 'Gaji Tentor')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    monthlyManagementFees: attendances.length > 0
+      ? attendances.reduce((acc, att) => {
+          const st = students.find(s => s.id === att.studentId);
+          return acc + (st?.managementMarginNominal !== undefined ? Number(st.managementMarginNominal) : 10000);
+        }, 0)
+      : (students.filter(s => s.status === 'Aktif').length * 10000),
+    monthlyOperationalExpenses: finance
+      .filter(f => f.type === 'Pengeluaran' && f.category === 'Operasional')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    monthlyNetProfit: finance
+      .filter(f => f.type === 'Pemasukan')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0) -
+      finance
+      .filter(f => f.type === 'Pengeluaran')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0),
+    unpaidInvoicesAmount: invoices
+      .filter(i => i.status !== 'Lunas')
+      .reduce((acc, i) => acc + (i.amount - (i.amountPaid || 0)), 0),
+  };
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', {

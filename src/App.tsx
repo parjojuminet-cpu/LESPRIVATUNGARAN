@@ -247,49 +247,14 @@ export default function App() {
     // 2. Optionally fetch from backend API if custom server is active
     try {
       const [
-        resStats, resStudents, resTutors, resParents, resSubjects, resAreas,
-        resSchedules, resAttendances, resInvoices, resFinance, resSalaries,
-        resApprovals, resModules, resSettings, resAuditLogs, resSheets, resUsers
+        resStats, resSheets
       ] = await Promise.all([
         safeFetch('/api/dashboard/stats', null),
-        safeFetch('/api/students', []),
-        safeFetch('/api/tutors', []),
-        safeFetch('/api/parents', []),
-        safeFetch('/api/subjects', []),
-        safeFetch('/api/working-areas', []),
-        safeFetch('/api/schedules', []),
-        safeFetch('/api/attendances', []),
-        safeFetch('/api/invoices', []),
-        safeFetch('/api/finance', []),
-        safeFetch('/api/salaries', []),
-        safeFetch('/api/approvals', []),
-        safeFetch('/api/modules', []),
-        safeFetch('/api/settings', []),
-        safeFetch('/api/audit-logs', []),
-        safeFetch('/api/sheets/status', null),
-        safeFetch('/api/users', [])
+        safeFetch('/api/sheets/status', null)
       ]);
 
       if (resStats) setStats(resStats);
-      if (Array.isArray(resStudents) && resStudents.length > 0) setStudents(resStudents);
-      if (Array.isArray(resTutors) && resTutors.length > 0) setTutors(resTutors);
-      if (Array.isArray(resParents) && resParents.length > 0) setParents(resParents);
-      if (Array.isArray(resSubjects) && resSubjects.length > 0) setSubjects(resSubjects);
-      if (Array.isArray(resAreas) && resAreas.length > 0) setWorkingAreas(resAreas);
-      if (Array.isArray(resSchedules) && resSchedules.length > 0) setSchedules(resSchedules);
-      if (Array.isArray(resAttendances) && resAttendances.length > 0) setAttendances(resAttendances);
-      if (Array.isArray(resInvoices) && resInvoices.length > 0) setInvoices(resInvoices);
-      if (Array.isArray(resFinance) && resFinance.length > 0) setFinance(resFinance);
-      if (Array.isArray(resSalaries) && resSalaries.length > 0) setSalaries(resSalaries);
-      if (Array.isArray(resApprovals) && resApprovals.length > 0) setApprovals(resApprovals);
-      if (Array.isArray(resModules) && resModules.length > 0) setModules(resModules);
-      if (Array.isArray(resSettings) && resSettings.length > 0) setSettings(resSettings);
-      if (Array.isArray(resAuditLogs) && resAuditLogs.length > 0) setAuditLogs(resAuditLogs);
       if (resSheets) setSyncStatus(resSheets);
-      if (Array.isArray(resUsers) && resUsers.length > 0) {
-        const cleanUsers = sanitizeErpDatabase({ users: resUsers }).users;
-        setUsers(cleanUsers);
-      }
     } catch (err) {
       console.warn('Backend API sync notice: running with Firestore / JSON Storage', err);
     } finally {
@@ -403,6 +368,12 @@ export default function App() {
     try {
       setIsLoading(true);
       const pulled = await pullErpDataFromSheet(token, spreadsheetId);
+      
+      // Save pulled database directly to local storage and Firestore
+      const sanitized = sanitizeErpDatabase(pulled);
+      saveErpJsonDatabase(sanitized);
+      await saveToFirestore(sanitized).catch(e => console.warn('Firestore sync failed during sheet import:', e));
+
       await fetch('/api/sheets/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -629,6 +600,7 @@ export default function App() {
               attendances={attendances}
               tutors={tutors}
               salaries={salaries}
+              finance={finance}
               userRole={currentUser.role}
               currentUserTutorId={currentUser.tutorId}
               onNavigate={(tab) => setActiveTab(tab)}

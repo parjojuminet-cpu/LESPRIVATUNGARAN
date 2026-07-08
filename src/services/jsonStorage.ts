@@ -63,35 +63,11 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
     .filter(s => !DUMMY_IDS.has(s.id) && !s.name?.includes('Ananda Rizky') && !s.name?.includes('Bintang Perkasa') && !s.name?.includes('Citra Kirana'))
     .map(s => ({
       ...s,
-      totalPackageSessions: 10,
-      remainingSessions: Math.min(s.remainingSessions !== undefined ? s.remainingSessions : 10, 10)
+      totalPackageSessions: s.totalPackageSessions !== undefined ? Number(s.totalPackageSessions) : 10,
+      remainingSessions: s.remainingSessions !== undefined ? Number(s.remainingSessions) : 10
     }));
   let cleanParents = (db.parents || []).filter(p => !DUMMY_IDS.has(p.id));
   let cleanSchedules = (db.schedules || []).filter(s => !DUMMY_IDS.has(s.id));
-
-  for (const st of DEFAULT_JSON_STUDENTS) {
-    if (!cleanStudents.some(s => s.id === st.id)) {
-      cleanStudents.push(st);
-    }
-  }
-
-  for (const tut of DEFAULT_JSON_TUTORS) {
-    if (!cleanTutors.some(t => t.id === tut.id)) {
-      cleanTutors.push(tut);
-    }
-  }
-
-  for (const pr of DEFAULT_JSON_PARENTS) {
-    if (!cleanParents.some(p => p.id === pr.id)) {
-      cleanParents.push(pr);
-    }
-  }
-
-  for (const sch of DEFAULT_JSON_SCHEDULES) {
-    if (!cleanSchedules.some(s => s.id === sch.id)) {
-      cleanSchedules.push(sch);
-    }
-  }
 
   // 2. Auto-generate login User accounts for any Tutor in cleanTutors who doesn't have a user account yet
   for (const tut of cleanTutors) {
