@@ -255,12 +255,35 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     if (!selectedInvoice) return;
 
     try {
-      await payInvoiceData(selectedInvoice.id, 'Transfer Bank / QRIS');
+      let invoiceToPayId = selectedInvoice.id;
+      // If it is a synthetic invoice, persist it to the database as a real invoice first
+      if (selectedInvoice.id.startsWith('syn-inv-') || (selectedInvoice as any).isSynthetic) {
+        const savedDb = await saveInvoiceData({
+          invoiceNumber: selectedInvoice.invoiceNumber,
+          studentId: selectedInvoice.studentId,
+          sessionCount: selectedInvoice.sessionCount,
+          ratePerSession: selectedInvoice.ratePerSession,
+          additionalAmount: selectedInvoice.additionalAmount || 0,
+          additionalNotes: selectedInvoice.additionalNotes || '',
+          amount: selectedInvoice.amount,
+          dueDate: selectedInvoice.dueDate,
+          status: 'Belum Lunas'
+        });
+        const newlyCreated = savedDb.invoices.find(i => i.studentId === selectedInvoice.studentId);
+        if (newlyCreated) {
+          invoiceToPayId = newlyCreated.id;
+        } else {
+          throw new Error("Gagal menyimpan invoice otomatis");
+        }
+      }
+
+      await payInvoiceData(invoiceToPayId, 'Transfer Bank / QRIS', payAmount);
       triggerAlert('Sukses', 'Pembayaran invoice SPP berhasil dicatat!', 'success');
       setShowPayModal(false);
       onRefresh();
       fetchMutasi();
     } catch (err) {
+      console.error('Error paying invoice:', err);
       triggerAlert('Error', 'Gagal mencatat pembayaran', 'error');
     }
   };
@@ -983,6 +1006,45 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     document.body.removeChild(link);
   };
 
+  // Merge Invoices with real-time attendances for all students (like Payroll)
+  const existingInvoicesMapped = (invoices || []).map(inv => ({
+    ...inv,
+    isSynthetic: false
+  }));
+
+  const unrepresentedStudentsMapped = students
+    .filter(st => !(invoices || []).some(inv => inv.studentId === st.id))
+    .map(st => {
+      const studentHadirAttendances = attendances.filter(a => a.studentId === st.id && a.status === 'Hadir');
+      const sessionCount = studentHadirAttendances.length;
+      const ratePerSession = st.ratePerSession || 25000;
+      const amount = sessionCount * ratePerSession;
+
+      // Deterministic invoice number based on student name & current year/month
+      const studentCode = st.name.trim().substring(0, 4).toUpperCase().replace(/\s/g, 'X');
+      const yearMonth = new Date().toISOString().substring(0, 7).replace('-', '');
+      const invoiceNumber = `INV/${yearMonth}/${studentCode}`;
+
+      return {
+        id: `syn-inv-${st.id}`,
+        invoiceNumber,
+        studentId: st.id,
+        amount,
+        amountPaid: 0,
+        status: 'Belum Lunas' as const,
+        dueDate: new Date(Date.now() + 14 * 86400000).toISOString().substring(0, 10),
+        createdAt: new Date().toISOString().substring(0, 10),
+        sessionCount,
+        ratePerSession,
+        additionalAmount: 0,
+        additionalNotes: '',
+        isSynthetic: true
+      };
+    })
+    .filter(inv => inv.sessionCount > 0);
+
+  const displayInvoices = [...existingInvoicesMapped, ...unrepresentedStudentsMapped];
+
   // Merge Tutor Salary records with real-time attendances for all tutors
   const currentMonthYear = new Date().toISOString().substring(0, 7);
 
@@ -1156,7 +1218,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             tab === 'invoices' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Invoice SPP Siswa ({invoices.length})
+          Invoice SPP Siswa ({displayInvoices.length})
         </button>
         <button
           onClick={() => setTab('salaries')}
@@ -1359,7 +1421,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {invoices
+                  {displayInvoices
                     .filter(inv => {
                       const student = students.find(s => s.id === inv.studentId);
                       const searchLower = search.toLowerCase();
@@ -1384,8 +1446,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       return (
                         <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
                           <td className="p-3.5">
-                            <div className="font-bold text-slate-900 flex items-center gap-2">
+                            <div className="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                               <span>{inv.invoiceNumber}</span>
+                              {inv.isSynthetic && (
+                                <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0" title="Terbit Otomatis dari data kehadiran">
+                                  ⚡ Sistem
+                                </span>
+                              )}
                               {inv.isRevised && (
                                 <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0" title={`Direvisi pada ${inv.revisedAt || ''}: ${inv.revisionNote || ''}`}>
                                   <CheckCircle2 className="w-2.5 h-2.5 text-amber-600" /> Sudah Direvisi

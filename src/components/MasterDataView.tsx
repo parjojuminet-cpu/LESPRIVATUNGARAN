@@ -102,7 +102,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
     maxStudents: 6,
     evaluationNotes: '',
     username: '',
-    password: 'tentor123',
+    password: '',
     createAccount: true
   });
 
@@ -250,13 +250,13 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
   // Save Tutor
   const handleSaveTutor = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanUsername = tutorForm.username.trim() || ('tentor_' + tutorForm.name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, ''));
+    const cleanUsername = tutorForm.username.trim() || (tutorForm.name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, ''));
     
     const payload = {
       id: editingTutor ? editingTutor.id : undefined,
       ...tutorForm,
       username: cleanUsername,
-      password: tutorForm.password.trim() || 'tentor123',
+      password: tutorForm.password.trim() || `${cleanUsername}111`,
       subjects: tutorForm.subjects.split(',').map(s => s.trim()).filter(Boolean),
       workingArea: tutorForm.workingArea.split(',').map(s => s.trim()).filter(Boolean),
       workingHours: tutorForm.workingHours.split(',').map(s => s.trim()).filter(Boolean),
@@ -989,7 +989,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                           <label className="block font-bold text-slate-700 mb-1">Password Default</label>
                           <input
                             type="text"
-                            placeholder="e.g. tentor123"
+                            placeholder="Default: username + 111"
                             value={tutorForm.password}
                             onChange={(e) => setTutorForm({ ...tutorForm, password: e.target.value })}
                             className="w-full bg-white border border-emerald-300 rounded-lg p-2 font-mono font-bold text-emerald-700"

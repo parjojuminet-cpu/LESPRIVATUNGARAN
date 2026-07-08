@@ -136,7 +136,7 @@ export async function saveTutorData(tutor: Partial<Tutor> & { id?: string; usern
   const cleanUsername = (tutor.username && tutor.username.trim())
     ? tutor.username.trim()
     : (fullTutor.name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, ''));
-  const cleanPassword = (tutor.password && tutor.password.trim()) ? tutor.password.trim() : 'tentor123';
+  const cleanPassword = (tutor.password && tutor.password.trim()) ? tutor.password.trim() : `${cleanUsername}111`;
 
   return persistDatabaseUpdate(db => {
     const exists = db.tutors.some(t => t.id === newId);

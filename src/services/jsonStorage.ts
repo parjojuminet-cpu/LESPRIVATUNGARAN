@@ -58,6 +58,17 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
     }
   }
 
+  // Auto-migrate tutor passwords to: username + '111' if they are still '123' or 'tentor123'
+  users = users.map(u => {
+    if (u.role === 'TENTOR' && (u.passwordHash === '123' || u.passwordHash === 'tentor123')) {
+      return {
+        ...u,
+        passwordHash: `${u.username.trim()}111`
+      };
+    }
+    return u;
+  });
+
   let cleanTutors = (db.tutors || []).filter(t => !DUMMY_IDS.has(t.id) && !t.name?.includes('Budi Santoso') && !t.name?.includes('Rina Wijaya'));
   let cleanStudents = (db.students || [])
     .filter(s => !DUMMY_IDS.has(s.id) && !s.name?.includes('Ananda Rizky') && !s.name?.includes('Bintang Perkasa') && !s.name?.includes('Citra Kirana'))
@@ -77,7 +88,7 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
       users.push({
         id: `usr-${tut.id}`,
         username: cleanUsername,
-        passwordHash: 'tentor123',
+        passwordHash: `${cleanUsername}111`,
         name: tut.name,
         role: 'TENTOR',
         tutorId: tut.id,
@@ -94,6 +105,22 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
       cleanModules.push(defaultMod);
     }
   }
+
+  // Deduplicate users strictly by ID and by Username
+  const seenUserIds = new Set<string>();
+  const seenUsernames = new Set<string>();
+  const uniqueUsers: User[] = [];
+
+  for (const u of users) {
+    const id = (u.id || '').trim();
+    const username = (u.username || '').toLowerCase().trim();
+    if (id && !seenUserIds.has(id) && username && !seenUsernames.has(username)) {
+      seenUserIds.add(id);
+      seenUsernames.add(username);
+      uniqueUsers.push(u);
+    }
+  }
+  users = uniqueUsers;
 
   return {
     users,

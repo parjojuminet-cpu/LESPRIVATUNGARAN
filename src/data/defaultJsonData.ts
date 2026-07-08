@@ -17,9 +17,9 @@ export const DEFAULT_JSON_USERS: User[] = [
   },
   {
     "id": "usr_ttr_001",
-    "username": "desti",
-    "passwordHash": "123",
-    "name": "Desti Ayu R.",
+    "username": "dewi",
+    "passwordHash": "dewi111",
+    "name": "Dewi Ayu R.",
     "role": "TENTOR",
     "tutorId": "ttr_001",
     "status": "Aktif",
@@ -29,7 +29,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_002",
     "username": "zeni",
-    "passwordHash": "123",
+    "passwordHash": "zeni111",
     "name": "Zeni Mei Sari",
     "role": "TENTOR",
     "tutorId": "ttr_002",
@@ -40,7 +40,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_003",
     "username": "emie",
-    "passwordHash": "123",
+    "passwordHash": "emie111",
     "name": "Emie Zulianingsih R.",
     "role": "TENTOR",
     "tutorId": "ttr_003",
@@ -51,7 +51,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_004",
     "username": "yuni",
-    "passwordHash": "123",
+    "passwordHash": "yuni111",
     "name": "Yuni Nurtiyas",
     "role": "TENTOR",
     "tutorId": "ttr_004",
@@ -62,7 +62,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_005",
     "username": "dila",
-    "passwordHash": "123",
+    "passwordHash": "dila111",
     "name": "Azizah Naufal Adila (Dila)",
     "role": "TENTOR",
     "tutorId": "ttr_005",
@@ -73,7 +73,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_006",
     "username": "dwi",
-    "passwordHash": "123",
+    "passwordHash": "dwi111",
     "name": "Dwi Nur Lestari",
     "role": "TENTOR",
     "tutorId": "ttr_006",
@@ -84,7 +84,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_007",
     "username": "ulfah",
-    "passwordHash": "123",
+    "passwordHash": "ulfah111",
     "name": "Ulfah Rohmawati",
     "role": "TENTOR",
     "tutorId": "ttr_007",
@@ -95,7 +95,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_008",
     "username": "muspiroh",
-    "passwordHash": "123",
+    "passwordHash": "muspiroh111",
     "name": "Muspiroh",
     "role": "TENTOR",
     "tutorId": "ttr_008",
@@ -106,7 +106,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_009",
     "username": "eka",
-    "passwordHash": "123",
+    "passwordHash": "eka111",
     "name": "Eka Rahmasari",
     "role": "TENTOR",
     "tutorId": "ttr_009",
@@ -117,7 +117,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_010",
     "username": "santika",
-    "passwordHash": "123",
+    "passwordHash": "santika111",
     "name": "Santika Lestari",
     "role": "TENTOR",
     "tutorId": "ttr_010",
@@ -128,7 +128,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_011",
     "username": "wiwid",
-    "passwordHash": "123",
+    "passwordHash": "wiwid111",
     "name": "Tri Widarti (Wiwid)",
     "role": "TENTOR",
     "tutorId": "ttr_011",
@@ -139,7 +139,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_012",
     "username": "fina",
-    "passwordHash": "123",
+    "passwordHash": "fina111",
     "name": "Siti Safinatun N. (Fina)",
     "role": "TENTOR",
     "tutorId": "ttr_012",
@@ -150,7 +150,7 @@ export const DEFAULT_JSON_USERS: User[] = [
   {
     "id": "usr_ttr_013",
     "username": "salsabila",
-    "passwordHash": "123",
+    "passwordHash": "salsabila111",
     "name": "Salsabila Malika P.",
     "role": "TENTOR",
     "tutorId": "ttr_013",
@@ -163,7 +163,7 @@ export const DEFAULT_JSON_USERS: User[] = [
 export const DEFAULT_JSON_TUTORS: Tutor[] = [
   {
     "id": "ttr_001",
-    "name": "Desti Ayu R.",
+    "name": "Dewi Ayu R.",
     "gender": "Perempuan",
     "address": "Griya Ungaran Residence, Jl. Mentawai 1 No. 45 Ungaran",
     "wa": "0812-3456-7890",

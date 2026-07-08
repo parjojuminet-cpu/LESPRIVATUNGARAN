@@ -9,7 +9,7 @@ import {
 // @ts-ignore
 import invoiceLogo from '../assets/images/invoice_logo_1783502513743.jpg';
 // @ts-ignore
-import invoiceStamp from '../assets/images/invoice_stamp_1783502530856.jpg';
+import invoiceStamp from '../assets/images/invoice_stamp_new_1783514910353.jpg';
 // @ts-ignore
 import invoiceSosmed from '../assets/images/invoice_sosmed_1783502546137.jpg';
 
@@ -96,7 +96,7 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
       ? `\n• Biaya/Cas Tambahan: *${formatRupiah(additionalAmount)}* - ${additionalNotes || 'Perlengkapan/Denda'}${addTutorSuffix}`
       : '';
 
-    const message = `Yth. Bapak/Ibu *${student.parentName}* (Orang Tua dari *${student.name}*),\n\nSalam hangat dari Management *Les Privat Ungaran*.\n\nBerikut kami lampirkan *Nota Penagihan SPP & Rincian Presensi Tentor* an. *${student.name}* (${student.grade} - ${student.school}) per tanggal ${dateNow}:\n\n🧾 *DETAIL NOTA TAGIHAN SPP*\n• No. Invoice: *${invoice.invoiceNumber}*\n• Total Sesi Terpakai: *${sessionCount} Sesi*\n\n👥 *RINCIAN SESI PER TENTOR PENGAJAR*:\n${tutorBreakdownLines}${additionalText}\n\n• *Total Tagihan Akhir*: *${formatRupiah(totalAmount)}*\n• Jumlah Terbayar: *${formatRupiah(invoice.amountPaid)}*\n• Sisa Kekurangan: *${formatRupiah(remaining)}*\n• Status Pembayaran: *${invoice.status.toUpperCase()}*\n• Jatuh Tempo: *${invoice.dueDate}*\n\n📚 *RINCIAN ABSENSI & JADWAL PENGAJARAN TENOR*\n${recentMaterials || '  (Siswa mengikuti seluruh sesi dengan sangat antusias)'}\n\n💳 *REKENING PEMBAYARAN RESMI*\n• BNI: *1794373083* a.n DESTI AYU RAHMAWATI\n• BRI: *609501001575508* a.n DESTI AYU RAHMAWATI\n\n📄 *Dokumen Nota Penagihan & Rapor PDF lengkap* dapat diunduh/dicetak dari sistem atau diminta ke Admin.\n\nMohon konfirmasi jika pembayaran telah dilakukan. Terima kasih atas kepercayaan Bapak/Ibu! 🙏✨`;
+    const message = `Yth. Bapak/Ibu *${student.parentName}* (Orang Tua dari *${student.name}*),\n\nSalam hangat dari Management *Les Privat Ungaran*.\n\nBerikut kami lampirkan *Nota Penagihan SPP & Rincian Presensi Tentor* an. *${student.name}* (${student.grade} - ${student.school}) per tanggal ${dateNow}:\n\n🧾 *DETAIL NOTA TAGIHAN SPP*\n• No. Invoice: *${invoice.invoiceNumber}*\n• Total Sesi Terpakai: *${sessionCount} Sesi*\n\n👥 *RINCIAN SESI PER TENTOR PENGAJAR*:\n${tutorBreakdownLines}${additionalText}\n\n• *Total Tagihan Akhir*: *${formatRupiah(totalAmount)}*\n• Jumlah Terbayar: *${formatRupiah(invoice.amountPaid)}*\n• Sisa Kekurangan: *${formatRupiah(remaining)}*\n• Status Pembayaran: *${invoice.status.toUpperCase()}*\n• Jatuh Tempo: *${invoice.dueDate}*\n\n📚 *RINCIAN ABSENSI & JADWAL PENGAJARAN TENOR*\n${recentMaterials || '  (Siswa mengikuti seluruh sesi dengan sangat antusias)'}\n\n💳 *REKENING PEMBAYARAN RESMI*\n• BNI: *1794373083* a.n LES PRIVAT UNGARAN\n• BRI: *609501001575508* a.n LES PRIVAT UNGARAN\n\n📄 *Dokumen Nota Penagihan & Rapor PDF lengkap* dapat diunduh/dicetak dari sistem atau diminta ke Admin.\n\nMohon konfirmasi jika pembayaran telah dilakukan. Terima kasih atas kepercayaan Bapak/Ibu! 🙏✨`;
 
     const encodedText = encodeURIComponent(message);
     const waUrl = `https://wa.me/${student.parentWA}?text=${encodedText}`;
@@ -408,8 +408,8 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
               <div className="font-bold text-slate-900 mb-1">💳 Rekening Pembayaran Resmi:</div>
               <div className="font-mono text-[11px] space-y-1 text-slate-700">
-                <div>• <strong>BANK BNI:</strong> 1794373083 <span className="text-[10px] text-slate-500">(a.n DESTI AYU RAHMAWATI)</span></div>
-                <div>• <strong>BANK BRI:</strong> 609501001575508 <span className="text-[10px] text-slate-500">(a.n DESTI AYU RAHMAWATI)</span></div>
+                <div>• <strong>BANK BNI:</strong> 1794373083 <span className="text-[10px] text-slate-500">(a.n LES PRIVAT UNGARAN)</span></div>
+                <div>• <strong>BANK BRI:</strong> 609501001575508 <span className="text-[10px] text-slate-500">(a.n LES PRIVAT UNGARAN)</span></div>
                 <div className="text-[10px] text-emerald-700 font-semibold mt-1">✓ Mohon kirimkan bukti transfer setelah melakukan pembayaran.</div>
               </div>
             </div>
@@ -419,27 +419,45 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
               <div className="text-center space-y-1 relative">
                 <p className="text-[10px] text-slate-500">Ungaran, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 <p className="font-bold text-slate-900 text-xs">Pimpinan Les Privat Ungaran</p>
-                <div className="h-20 flex items-center justify-center my-0.5">
+                <div className="h-24 flex items-center justify-center my-1">
                   <img
                     src={invoiceStamp}
                     alt="Stempel & Tanda Tangan"
-                    className="w-24 h-24 object-contain mix-blend-multiply"
+                    className="w-28 h-28 object-contain mix-blend-multiply"
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <p className="font-extrabold text-slate-800 text-xs underline decoration-slate-400">Desti Ayu Rahmawati</p>
+                <p className="font-extrabold text-slate-800 text-xs underline decoration-slate-400">Admin Keuangan</p>
               </div>
             </div>
           </div>
 
           {/* Social Media Banner */}
-          <div className="flex justify-center items-center pt-2 border-t border-slate-100">
-            <img
-              src={invoiceSosmed}
-              alt="Social Media Les Privat"
-              className="h-14 object-contain"
-              referrerPolicy="no-referrer"
-            />
+          <div className="pt-3 border-t-2 border-dashed border-slate-200 mt-4">
+            <div className="bg-gradient-to-r from-emerald-50 via-slate-50 to-indigo-50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-100 shadow-2xs">
+              <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                <span className="text-[11px] font-extrabold text-indigo-700 tracking-wider uppercase mb-1">Hubungi & Ikuti Kami</span>
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5 justify-center sm:justify-start text-[10px] font-bold text-slate-700">
+                  <span className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs">
+                    <span className="text-emerald-500">📞</span> WA: 0857-2770-7500
+                  </span>
+                  <span className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs">
+                    <span className="text-pink-500">📸</span> IG: @lesprivat_ungaran
+                  </span>
+                  <span className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs">
+                    <span className="text-blue-600">📘</span> FB: Les Privat Ungaran
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 transition-transform duration-300 hover:scale-105">
+                <img
+                  src={invoiceSosmed}
+                  alt="Social Media Les Privat"
+                  className="h-16 sm:h-20 md:h-24 object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Footer Note */}

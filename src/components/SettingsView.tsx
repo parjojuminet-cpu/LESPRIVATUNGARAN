@@ -112,13 +112,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleSelectTutorForAccount = (tutorId: string) => {
     const selectedTutor = tutors.find(t => t.id === tutorId);
     if (selectedTutor) {
-      const cleanUsername = 'tentor_' + selectedTutor.name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '');
+      const cleanUsername = selectedTutor.name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '');
       setNewUserForm(prev => ({
         ...prev,
         tutorId: selectedTutor.id,
         name: selectedTutor.name,
         username: cleanUsername,
-        password: 'tentor123',
+        password: `${cleanUsername}111`,
         role: 'TENTOR',
         desc: `Akses khusus tentor ${selectedTutor.name}: presensi mengajar, modul & rincian honor.`
       }));
@@ -468,7 +468,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
                 <div className="pl-4 border-l border-slate-200">
                   <span className="text-slate-400 font-sans text-[11px] block">Password:</span>
-                  <span className="font-bold text-indigo-600">{acc.passwordHash || 'tentor123'}</span>
+                  <span className="font-bold text-indigo-600">{acc.passwordHash || `${acc.username}111`}</span>
                 </div>
               </div>
             </div>
@@ -567,7 +567,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. tentor123"
+                  placeholder="Default: username + 111"
                   value={newUserForm.password}
                   onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-mono font-bold text-emerald-700"
