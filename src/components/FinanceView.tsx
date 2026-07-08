@@ -57,6 +57,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [newInvAdditionalTutorId, setNewInvAdditionalTutorId] = useState<string>('');
   const [newInvAmount, setNewInvAmount] = useState<number>(25000);
   const [newInvDueDate, setNewInvDueDate] = useState(new Date(Date.now() + 14 * 86400000).toISOString().substring(0, 10));
+  const [hasPreviewed, setHasPreviewed] = useState(false);
+  const [showAddInvoicePreview, setShowAddInvoicePreview] = useState(false);
 
   // Modal Edit Invoice
   const [showEditInvoiceModal, setShowEditInvoiceModal] = useState(false);
@@ -265,6 +267,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
   // Handle student selection in Create Invoice modal (Auto-pull token / attendance count & rates)
   const handleSelectStudentForNewInvoice = (studentId: string) => {
+    setHasPreviewed(false);
     setNewInvStudentId(studentId);
     const st = students.find(s => s.id === studentId);
     const hadirCount = attendances.filter(a => a.studentId === studentId && a.status === 'Hadir').length;
@@ -280,6 +283,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
   // Helper to safely open Create Invoice modal and reset state to defaults
   const handleOpenAddInvoiceModal = () => {
+    setHasPreviewed(false);
     setNewInvStudentId('');
     setNewInvSessionCount(1);
     setNewInvRatePerSession(25000);
@@ -2131,6 +2135,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       const sess = Number(e.target.value);
                       setNewInvSessionCount(sess);
                       setNewInvAmount(sess * newInvRatePerSession + newInvAdditionalAmount);
+                      setHasPreviewed(false);
                     }}
                     className="w-full border border-slate-200 rounded-xl p-2.5 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
@@ -2149,6 +2154,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       const rate = Number(e.target.value);
                       setNewInvRatePerSession(rate);
                       setNewInvAmount(newInvSessionCount * rate + newInvAdditionalAmount);
+                      setHasPreviewed(false);
                     }}
                     className="w-full border border-slate-200 rounded-xl p-2.5 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
@@ -2170,6 +2176,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         const add = Number(e.target.value);
                         setNewInvAdditionalAmount(add);
                         setNewInvAmount(newInvSessionCount * newInvRatePerSession + add);
+                        setHasPreviewed(false);
                       }}
                       placeholder="0"
                       className="w-full border border-slate-200 bg-white rounded-xl p-2 font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
@@ -2180,7 +2187,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <input
                       type="text"
                       value={newInvAdditionalNotes}
-                      onChange={(e) => setNewInvAdditionalNotes(e.target.value)}
+                      onChange={(e) => {
+                        setNewInvAdditionalNotes(e.target.value);
+                        setHasPreviewed(false);
+                      }}
                       placeholder="Contoh: Denda terlambat / Modul tentor"
                       className="w-full border border-slate-200 bg-white rounded-xl p-2 font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                     />
@@ -2190,7 +2200,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <label className="block text-slate-600 font-semibold mb-1 text-[11px]">Tentor Terkait Cas (Opsional)</label>
                   <select
                     value={newInvAdditionalTutorId}
-                    onChange={(e) => setNewInvAdditionalTutorId(e.target.value)}
+                    onChange={(e) => {
+                      setNewInvAdditionalTutorId(e.target.value);
+                      setHasPreviewed(false);
+                    }}
                     className="w-full border border-slate-200 bg-white rounded-xl p-2 font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   >
                     <option value="">-- Bebankan Umum / Semua Tentor --</option>
@@ -2208,7 +2221,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     type="number"
                     required
                     value={newInvAmount}
-                    onChange={(e) => setNewInvAmount(Number(e.target.value))}
+                    onChange={(e) => {
+                      setNewInvAmount(Number(e.target.value));
+                      setHasPreviewed(false);
+                    }}
                     className="w-full border border-slate-200 rounded-xl p-2.5 font-black text-indigo-700 bg-indigo-50/50 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
@@ -2219,26 +2235,66 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     type="date"
                     required
                     value={newInvDueDate}
-                    onChange={(e) => setNewInvDueDate(e.target.value)}
+                    onChange={(e) => {
+                      setNewInvDueDate(e.target.value);
+                      setHasPreviewed(false);
+                    }}
                     className="w-full border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddInvoiceModal(false)}
-                  className="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 cursor-pointer shadow-xs"
-                >
-                  Terbitkan Invoice
-                </button>
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddInvoiceModal(false)}
+                    className="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer text-xs"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!newInvStudentId}
+                    onClick={() => {
+                      if (newInvStudentId) {
+                        setShowAddInvoicePreview(true);
+                      }
+                    }}
+                    className={`px-4 py-2 font-bold rounded-xl transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
+                      newInvStudentId
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Preview Invoice
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={!hasPreviewed || !newInvStudentId}
+                    className={`px-5 py-2 font-bold rounded-xl transition-all text-xs cursor-pointer shadow-xs ${
+                      hasPreviewed && newInvStudentId
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    }`}
+                  >
+                    Terbitkan Invoice
+                  </button>
+                </div>
+
+                {!hasPreviewed && newInvStudentId && (
+                  <p className="text-right text-[10px] text-amber-600 font-semibold animate-pulse">
+                    ⚠️ Silakan klik "Preview Invoice" terlebih dahulu untuk mengaktifkan tombol "Terbitkan Invoice".
+                  </p>
+                )}
+                {hasPreviewed && newInvStudentId && (
+                  <p className="text-right text-[10px] text-emerald-600 font-semibold">
+                    ✓ Pratinjau selesai! Anda sekarang dapat menerbitkan invoice ini.
+                  </p>
+                )}
               </div>
             </form>
           </div>
@@ -2374,6 +2430,34 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           onClose={() => {
             setShowPdfModal(false);
             setSelectedPdfInvoice(null);
+          }}
+        />
+      )}
+
+      {/* MODAL DRAFT PREVIEW INVOICE */}
+      {showAddInvoicePreview && (
+        <InvoicePdfModal
+          invoice={{
+            id: 'draft-preview',
+            invoiceNumber: 'INV/TEMP/DRAFT-' + Math.floor(1000 + Math.random() * 9000),
+            studentId: newInvStudentId,
+            amount: newInvAmount,
+            amountPaid: 0,
+            status: 'Belum Lunas',
+            dueDate: newInvDueDate,
+            createdAt: new Date().toISOString().substring(0, 10),
+            sessionCount: newInvSessionCount,
+            ratePerSession: newInvRatePerSession,
+            additionalAmount: newInvAdditionalAmount,
+            additionalNotes: newInvAdditionalNotes,
+            additionalTutorId: newInvAdditionalTutorId || undefined,
+          }}
+          student={students.find(s => s.id === newInvStudentId)}
+          attendances={attendances || []}
+          tutors={tutors || []}
+          onClose={() => {
+            setShowAddInvoicePreview(false);
+            setHasPreviewed(true);
           }}
         />
       )}
