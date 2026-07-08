@@ -469,14 +469,22 @@ app.get('/api/invoices', (req, res) => {
 
 app.post('/api/invoices', (req, res) => {
   const newInv = {
-    id: `inv-${Date.now()}`,
-    invoiceNumber: `INV/${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(100 + Math.random() * 900)}`,
+    id: req.body.id || `inv-${Date.now()}`,
+    invoiceNumber: req.body.invoiceNumber || `INV/${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(100 + Math.random() * 900)}`,
     studentId: req.body.studentId,
     amount: Number(req.body.amount),
-    amountPaid: 0,
-    status: 'Belum Lunas',
+    amountPaid: req.body.amountPaid || 0,
+    status: req.body.status || 'Belum Lunas',
     dueDate: req.body.dueDate,
-    createdAt: new Date().toISOString().substring(0, 10)
+    createdAt: req.body.createdAt || new Date().toISOString().substring(0, 10),
+    sessionCount: req.body.sessionCount !== undefined ? Number(req.body.sessionCount) : undefined,
+    ratePerSession: req.body.ratePerSession !== undefined ? Number(req.body.ratePerSession) : undefined,
+    additionalAmount: req.body.additionalAmount !== undefined ? Number(req.body.additionalAmount) : 0,
+    additionalNotes: req.body.additionalNotes || '',
+    additionalTutorId: req.body.additionalTutorId || '',
+    isRevised: req.body.isRevised || false,
+    revisedAt: req.body.revisedAt,
+    revisionNote: req.body.revisionNote
   };
   invoices.unshift(newInv);
   res.json(newInv);

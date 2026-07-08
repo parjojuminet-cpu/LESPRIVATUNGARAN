@@ -278,6 +278,19 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setNewInvAmount(sessCount * rate);
   };
 
+  // Helper to safely open Create Invoice modal and reset state to defaults
+  const handleOpenAddInvoiceModal = () => {
+    setNewInvStudentId('');
+    setNewInvSessionCount(1);
+    setNewInvRatePerSession(25000);
+    setNewInvAdditionalAmount(0);
+    setNewInvAdditionalNotes('');
+    setNewInvAdditionalTutorId('');
+    setNewInvAmount(25000);
+    setNewInvDueDate(new Date(Date.now() + 14 * 86400000).toISOString().substring(0, 10));
+    setShowAddInvoiceModal(true);
+  };
+
   // Handle Create Invoice
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1313,7 +1326,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         <div className="space-y-4">
           <div className="flex justify-end">
             <button
-              onClick={() => setShowAddInvoiceModal(true)}
+              onClick={handleOpenAddInvoiceModal}
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4" /> Terbitkan Invoice SPP Baru

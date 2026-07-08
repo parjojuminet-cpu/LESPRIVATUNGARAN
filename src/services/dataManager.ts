@@ -12,8 +12,8 @@ export async function persistDatabaseUpdate(updater: (db: ErpDatabaseJson) => Er
   const nextDb = updater(currentDb);
   saveErpJsonDatabase(nextDb);
   
-  // Background cloud Firestore save to keep UI fully instant & non-blocking
-  saveToFirestore(nextDb).catch(err => {
+  // Wait for cloud Firestore save to ensure consistent reads and avoid UI race conditions
+  await saveToFirestore(nextDb).catch(err => {
     console.warn('Background Firestore save status:', err);
   });
   
@@ -429,7 +429,7 @@ export async function saveInvoiceData(invoice: Partial<Invoice>): Promise<ErpDat
   const newId = invoice.id || `inv_${Date.now()}`;
   const fullInvoice: Invoice = {
     id: newId,
-    invoiceNumber: invoice.invoiceNumber || `INV-${Date.now()}`,
+    invoiceNumber: invoice.invoiceNumber || `INV/${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(100 + Math.random() * 900)}`,
     studentId: invoice.studentId || '',
     sessionCount: invoice.sessionCount !== undefined ? Number(invoice.sessionCount) : undefined,
     ratePerSession: invoice.ratePerSession !== undefined ? Number(invoice.ratePerSession) : undefined,
