@@ -1,6 +1,16 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
+import {
+  DEFAULT_JSON_USERS,
+  DEFAULT_JSON_TUTORS,
+  DEFAULT_JSON_STUDENTS,
+  DEFAULT_JSON_SCHEDULES,
+  DEFAULT_JSON_PARENTS,
+  DEFAULT_JSON_SUBJECTS,
+  DEFAULT_JSON_WORKING_AREAS,
+  DEFAULT_JSON_SETTINGS
+} from './src/data/defaultJsonData';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -8,13 +18,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Default initial mock database (kosong saat awal masuk, diisi dari Google Sheets setelah login)
-let students: any[] = [];
-let tutors: any[] = [];
-let parents: any[] = [];
-let subjects: any[] = [];
-let workingAreas: any[] = [];
-let schedules: any[] = [];
+// Default initial mock database from defaultJsonData
+let students: any[] = [...DEFAULT_JSON_STUDENTS];
+let tutors: any[] = [...DEFAULT_JSON_TUTORS];
+let parents: any[] = [...DEFAULT_JSON_PARENTS];
+let subjects: any[] = [...DEFAULT_JSON_SUBJECTS];
+let workingAreas: any[] = [...DEFAULT_JSON_WORKING_AREAS];
+let schedules: any[] = [...DEFAULT_JSON_SCHEDULES];
 let attendances: any[] = [];
 let invoices: any[] = [];
 let finance: any[] = [];
@@ -22,17 +32,9 @@ let salaries: any[] = [];
 let approvals: any[] = [];
 let modules: any[] = [];
 
-let settings = [
-  { key: 'MARGIN_MANAGEMENT_NOMINAL', value: 10000, description: 'Nominal Standar Fee/Potongan Manajemen (Rp per Sesi Pertemuan)', category: 'Keuangan' },
-  { key: 'MAX_RESCHEDULE_PER_MONTH', value: 2, description: 'Batas Maksimal Reschedule Gratis Per Bulan', category: 'Operasional' },
-  { key: 'MIN_NOTICE_RESCHEDULE_DAYS', value: 1, description: 'Minimal Pemberitahuan Reschedule Sebelum Hari Mengajar (Hari, misal 1 atau 2 hari)', category: 'Operasional' },
-  { key: 'MAX_DEADLINE_RESCHEDULE_BEFORE_TEACHING_DAYS', value: 1, description: 'Batas Maksimal Pengajuan Reschedule Sebelum Hari Mengajar (Hari, Standar: H-1)', category: 'Operasional' },
-  { key: 'AUTO_SYNC_GOOGLE_SHEETS', value: true, description: 'Sinkronisasi Realtime Otomatis ke Google Sheets', category: 'Integrasi' }
-];
+let settings = [...DEFAULT_JSON_SETTINGS];
 
-let users = [
-  { id: 'usr-admin', username: 'admin', passwordHash: 'admin123', name: 'Administrator', role: 'SUPER_ADMIN', status: 'Aktif', desc: 'Akses penuh ke seluruh modul ERP.', createdAt: '2026-01-01' }
-];
+let users = [...DEFAULT_JSON_USERS];
 
 let auditLogs: any[] = [];
 
@@ -150,9 +152,9 @@ app.post('/api/users', (req, res) => {
     username: req.body.username || `user_${Date.now()}`,
     passwordHash: req.body.passwordHash || req.body.password || 'tentor123',
     name: req.body.name || 'Pengguna Baru',
-    role: req.body.role || 'TENTOR',
+    role: (req.body.role || 'TENTOR') as any,
     tutorId: req.body.tutorId || null,
-    status: req.body.status || 'Aktif',
+    status: (req.body.status || 'Aktif') as any,
     desc: req.body.desc || `Akses ${req.body.role || 'TENTOR'} ERP Bimbel Privat`,
     createdAt: new Date().toISOString().substring(0, 10)
   };
@@ -212,9 +214,9 @@ app.post('/api/tutors', (req, res) => {
       username: req.body.username,
       passwordHash: req.body.password || 'tentor123',
       name: newTutor.name,
-      role: 'TENTOR',
+      role: 'TENTOR' as any,
       tutorId: newTutorId,
-      status: 'Aktif',
+      status: 'Aktif' as any,
       desc: `Akses khusus tentor ${newTutor.name}: presensi mengajar, modul & rincian honor.`,
       createdAt: new Date().toISOString().substring(0, 10)
     };
@@ -698,6 +700,22 @@ app.post('/api/sheets/sync', (req, res) => {
   });
 });
 
+app.post('/api/clear-all-activities-absensi-keuangan', (req, res) => {
+  schedules = [];
+  attendances = [];
+  finance = [];
+  invoices = [];
+  salaries = [];
+  approvals = [];
+  // Reset student remaining sessions to total package sessions
+  students = students.map((s: any) => ({
+    ...s,
+    remainingSessions: s.totalPackageSessions !== undefined ? Number(s.totalPackageSessions) : 10,
+    packageStatus: 'Aktif'
+  }));
+  res.json({ success: true, message: 'Data aktivitas, absensi, dan keuangan berhasil dikosongkan.' });
+});
+
 app.post('/api/clear-all-data', (req, res) => {
   students = [];
   tutors = [];
@@ -711,6 +729,17 @@ app.post('/api/clear-all-data', (req, res) => {
   salaries = [];
   approvals = [];
   modules = [];
+  users = [
+    { id: 'usr-admin', username: 'admin', passwordHash: 'admin123', name: 'Administrator', role: 'SUPER_ADMIN', status: 'Aktif', desc: 'Akses penuh ke seluruh modul ERP.', createdAt: '2026-01-01' }
+  ];
+  settings = [
+    { key: 'MARGIN_MANAGEMENT_NOMINAL', value: 10000, description: 'Nominal Standar Fee/Potongan Manajemen (Rp per Sesi Pertemuan)', category: 'Keuangan' },
+    { key: 'MAX_RESCHEDULE_PER_MONTH', value: 2, description: 'Batas Maksimal Reschedule Gratis Per Bulan', category: 'Operasional' },
+    { key: 'MIN_NOTICE_RESCHEDULE_DAYS', value: 1, description: 'Minimal Pemberitahuan Reschedule Sebelum Hari Mengajar (Hari, misal 1 atau 2 hari)', category: 'Operasional' },
+    { key: 'MAX_DEADLINE_RESCHEDULE_BEFORE_TEACHING_DAYS', value: 1, description: 'Batas Maksimal Pengajuan Reschedule Sebelum Hari Mengajar (Hari, Standar: H-1)', category: 'Operasional' },
+    { key: 'AUTO_SYNC_GOOGLE_SHEETS', value: true, description: 'Sinkronisasi Realtime Otomatis ke Google Sheets', category: 'Integrasi' }
+  ];
+  auditLogs = [];
   res.json({ success: true, message: 'Semua data ERP telah dikosongkan.' });
 });
 

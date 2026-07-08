@@ -125,6 +125,46 @@ export const JantungView: React.FC<JantungViewProps> = ({
     );
   };
 
+  // Wipe All Data Action (Master & Transactions)
+  const handleWipeAllData = () => {
+    triggerConfirm(
+      '🚨 KOSONGKAN TOTAL SELURUH DATA MASTER & SISTEM',
+      'Apakah Anda benar-benar yakin ingin menghapus seluruh data di sistem, TERMASUK Data Master (Siswa, Tentor, Ortu, Mapel, Wilayah, Jadwal, Absensi, Keuangan)? Sistem akan sepenuhnya bersih untuk input data baru. Tindakan ini tidak dapat dibatalkan!',
+      async () => {
+        try {
+          try {
+            await fetch('/api/clear-all-data', { method: 'POST' }).catch(() => {});
+          } catch (err) {}
+
+          await persistDatabaseUpdate(db => {
+            return {
+              users: [],
+              students: [],
+              tutors: [],
+              parents: [],
+              subjects: [],
+              workingAreas: [],
+              schedules: [],
+              attendances: [],
+              invoices: [],
+              finance: [],
+              salaries: [],
+              approvals: [],
+              modules: [],
+              settings: [],
+              auditLogs: []
+            };
+          });
+
+          showAlert('success', 'Seluruh data master, penyiapan, dan sistem berhasil dikosongkan!');
+          onRefresh();
+        } catch (err) {
+          showAlert('error', 'Gagal mengosongkan seluruh data master.');
+        }
+      }
+    );
+  };
+
   // Delete Attendance Action (Standard business rules apply)
   const handleDeleteAttendance = (att: Attendance) => {
     const student = students.find(s => s.id === att.studentId);
@@ -567,13 +607,22 @@ export const JantungView: React.FC<JantungViewProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={handleResetSystem}
-            className="bg-rose-600 hover:bg-rose-500 text-white font-extrabold px-6 py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95 transition-all self-start md:self-auto shrink-0 border border-rose-400/30"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>KOSONGKAN DATA (Mulai dari Nol)</span>
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 md:items-center self-start md:self-auto shrink-0">
+            <button
+              onClick={handleResetSystem}
+              className="bg-amber-600 hover:bg-amber-500 text-white font-extrabold px-5 py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-950/50 cursor-pointer active:scale-95 transition-all border border-amber-400/30"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Bersihkan Aktivitas &amp; Keuangan</span>
+            </button>
+            <button
+              onClick={handleWipeAllData}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-extrabold px-5 py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95 transition-all border border-rose-400/30"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span>KOSONGKAN TOTAL SELURUH DATA MASTER</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -100,8 +100,8 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
     students: cleanStudents,
     tutors: cleanTutors,
     parents: cleanParents,
-    subjects: (db.subjects && db.subjects.length > 0) ? db.subjects.filter(s => !DUMMY_IDS.has(s.id)) : DEFAULT_JSON_SUBJECTS,
-    workingAreas: (db.workingAreas && db.workingAreas.length > 0) ? db.workingAreas.filter(w => !DUMMY_IDS.has(w.id)) : DEFAULT_JSON_WORKING_AREAS,
+    subjects: db.subjects ? db.subjects.filter(s => !DUMMY_IDS.has(s.id)) : DEFAULT_JSON_SUBJECTS,
+    workingAreas: db.workingAreas ? db.workingAreas.filter(w => !DUMMY_IDS.has(w.id)) : DEFAULT_JSON_WORKING_AREAS,
     schedules: cleanSchedules,
     attendances: (db.attendances || []).filter(a => !DUMMY_IDS.has(a.id)),
     invoices: (db.invoices || []).filter(i => !DUMMY_IDS.has(i.id)),
@@ -109,7 +109,7 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
     salaries: (db.salaries || []).filter(s => !DUMMY_IDS.has(s.id)),
     approvals: (db.approvals || []).filter(a => !DUMMY_IDS.has(a.id)),
     modules: cleanModules,
-    settings: db.settings && db.settings.length > 0 ? db.settings : DEFAULT_JSON_SETTINGS,
+    settings: db.settings ? db.settings : DEFAULT_JSON_SETTINGS,
     auditLogs: (db.auditLogs || []).filter(l => !DUMMY_IDS.has(l.id))
   };
 }

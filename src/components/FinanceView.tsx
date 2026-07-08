@@ -310,8 +310,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       triggerAlert('Sukses', 'Invoice SPP baru berhasil diterbitkan secara otomatis dari data token/sesi!', 'success');
       setShowAddInvoiceModal(false);
       onRefresh();
-    } catch (err) {
-      triggerAlert('Error', 'Gagal menerbitkan invoice', 'error');
+    } catch (err: any) {
+      console.error('Error creating invoice:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      triggerAlert('Error', `Gagal menerbitkan invoice: ${errMsg}`, 'error');
     }
   };
 
@@ -384,8 +386,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       setShowEditInvoiceModal(false);
       setEditingInvoice(null);
       onRefresh();
-    } catch (err) {
-      triggerAlert('Error', 'Gagal merevisi invoice SPP.', 'error');
+    } catch (err: any) {
+      console.error('Error revising invoice:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      triggerAlert('Error', `Gagal merevisi invoice SPP: ${errMsg}`, 'error');
     }
   };
 
