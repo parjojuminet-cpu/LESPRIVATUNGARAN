@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Lock, User as UserIcon, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
+import { Lock, User as UserIcon, Eye, EyeOff, LogIn, AlertCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen, Camera, CheckSquare, Coins } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -13,6 +13,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ users, onLoginSuccess }) =
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showGuide, setShowGuide] = useState(true); // Open by default to ensure they notice it!
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +151,83 @@ export const LoginView: React.FC<LoginViewProps> = ({ users, onLoginSuccess }) =
         <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-100">
           Lupa password? Hubungi Tim Manajemen Bimbel.
         </div>
+      </div>
+
+      {/* Tutor Workflow & Attendance Guide Card */}
+      <div className="w-full max-w-md relative z-10 bg-slate-800 text-white p-5 rounded-3xl border border-slate-700 shadow-xl mt-4">
+        <button
+          type="button"
+          onClick={() => setShowGuide(!showGuide)}
+          className="w-full flex items-center justify-between font-bold text-xs sm:text-sm tracking-wide uppercase text-indigo-300 hover:text-white transition-all cursor-pointer focus:outline-none"
+        >
+          <div className="flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <span className="text-left">PANDUAN ALUR KERJA & ABSEN TENTOR</span>
+          </div>
+          {showGuide ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+        </button>
+
+        {showGuide && (
+          <div className="mt-4 space-y-4 border-t border-slate-700/65 pt-3.5 text-xs text-slate-300 leading-relaxed">
+            <p className="text-[11px] text-slate-400 font-medium">
+              Berikut 5 langkah mudah bagi tentor untuk mengajar dan melakukan absensi (absen) di sistem ERP Les Privat Ungaran:
+            </p>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-indigo-500/30">
+                1
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-[12px]">🔑 1. Masuk Akun</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Masuk dengan Username & Password Anda. Jika belum punya atau lupa, tanyakan ke Admin Manajemen.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-amber-500/30">
+                2
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-[12px]">📅 2. Pilih Jadwal Siswa</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Setelah masuk, buka menu <strong className="text-white">Isi Absensi Selfie</strong>. Pilih nama siswa yang diajar hari ini dari jadwal aktif Anda.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-sky-500/30">
+                3
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-[12px]">📸 3. Ambil Foto Selfie KBM</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Gunakan kamera HP/laptop Anda untuk mengambil foto selfie bersama siswa saat KBM berlangsung. Sistem akan menyematkan watermark tanggal, jam & nama siswa otomatis.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-emerald-500/30">
+                4
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-[12px]">✍️ 4. Isi Jurnal & Feedback</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Tulis <strong className="text-white">Materi Pembelajaran</strong>, <strong className="text-white">Catatan Perkembangan</strong>, serta pesan/feedback bersahabat untuk orang tua murid.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-purple-500/30">
+                5
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-[12px]">📤 5. Kirim Absen & Terekap Honor</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Klik tombol <strong className="text-white">Kirim Presensi Mengajar</strong>. Kuota murid terpotong otomatis & <strong>HONOR Anda langsung terekap secara real-time</strong> di menu Keuangan!</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/60 p-2.5 rounded-2xl border border-slate-700/80 text-[11px] text-amber-300 font-semibold text-center">
+              💡 Penting: Selalu lakukan Absen tepat waktu di hari mengajar yang sama agar honor Anda terekap dengan benar!
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

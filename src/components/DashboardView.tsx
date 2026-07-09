@@ -497,6 +497,77 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       ) : (
         /* Tentor-Specific KPI Cards & Income Summary */
         <div className="space-y-4">
+          {/* Panduan Alur Kerja & Absen Tentor */}
+          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 border border-indigo-500/30 shadow-md space-y-4">
+            <div className="flex items-center gap-2 border-b border-indigo-800/50 pb-3">
+              <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight">💡 Panduan Alur Kerja &amp; Cara Absen Tentor</h3>
+                <p className="text-[11px] text-indigo-200">Ikuti 5 langkah mudah berikut ini agar proses mengajar lancar dan honor Anda langsung terekap secara real-time:</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {/* Step 1 */}
+              <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs border border-indigo-500/30 mb-2 font-mono">1</div>
+                  <h4 className="font-bold text-[12px] text-slate-100 flex items-center gap-1">🔑 Login Akun</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Gunakan username &amp; password resmi yang terdaftar.</p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs border border-amber-500/30 mb-2 font-mono">2</div>
+                  <h4 className="font-bold text-[12px] text-slate-100 flex items-center gap-1">📅 Pilih Jadwal</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Masuk menu absen, lalu pilih nama siswa yang diajar hari ini.</p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold text-xs border border-sky-500/30 mb-2 font-mono">3</div>
+                  <h4 className="font-bold text-[12px] text-slate-100 flex items-center gap-1">📸 Foto Selfie</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Ambil foto selfie bersama murid saat kegiatan les berlangsung.</p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-500/30 mb-2 font-mono">4</div>
+                  <h4 className="font-bold text-[12px] text-slate-100 flex items-center gap-1">✍️ Isi Jurnal</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Tulis materi &amp; berikan feedback ramah untuk orang tua.</p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-800/40 flex flex-col justify-between">
+                <div>
+                  <div className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs border border-purple-500/30 mb-2 font-mono">5</div>
+                  <h4 className="font-bold text-[12px] text-slate-100 flex items-center gap-1">📤 Kirim Absen</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Kirim presensi. Kuota terpotong &amp; honor Anda terekap otomatis!</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/60 p-3 rounded-xl border border-indigo-800/30 text-xs text-indigo-200">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span>Setiap absensi dilengkapi bukti selfie &amp; watermark keamanan</span>
+              </div>
+              <button 
+                onClick={() => onNavigate('attendance')}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                Mulai Isi Absensi Sekarang &rarr;
+              </button>
+            </div>
+          </div>
+
           {/* Featured Real-Time Income Banner for Tentor */}
           <div className="bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-900 text-white rounded-2xl p-5 border border-emerald-700/60 shadow-md">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
