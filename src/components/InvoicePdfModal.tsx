@@ -128,7 +128,7 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
       ? `\n• Biaya/Cas Tambahan: *${formatRupiah(additionalAmount)}* - ${additionalNotes || 'Perlengkapan/Denda'}${addTutorSuffix}`
       : '';
 
-    const message = `Yth. Bapak/Ibu *${student.parentName}* (Orang Tua dari *${student.name}*),\n\nSalam hangat dari Management *Les Privat Ungaran*.\n\nBerikut kami lampirkan *Nota Penagihan SPP & Rincian Presensi Tentor* an. *${student.name}* (${student.grade} - ${student.school}) per tanggal ${dateNow}:\n\n🧾 *DETAIL NOTA TAGIHAN SPP*\n• No. Invoice: *${invoice.invoiceNumber}*\n• Total Sesi Terpakai: *${sessionCount} Sesi*\n\n👥 *RINCIAN SESI PER TENTOR PENGAJAR*:\n${tutorBreakdownLines}${additionalText}\n\n• *Total Tagihan Akhir*: *${formatRupiah(totalAmount)}*\n• Jumlah Terbayar: *${formatRupiah(invoice.amountPaid)}*\n• Sisa Kekurangan: *${formatRupiah(remaining)}*\n• Status Pembayaran: *${invoice.status.toUpperCase()}*\n• Jatuh Tempo: *${invoice.dueDate}*\n\n📚 *RINCIAN ABSENSI & JADWAL PENGAJARAN TENTOR*\n${recentMaterials || '  (Siswa mengikuti seluruh sesi dengan sangat antusias)'}\n\n💳 *REKENING PEMBAYARAN RESMI*\n• BNI: *1794373083* a.n LES PRIVAT UNGARAN\n• BRI: *609501001575508* a.n LES PRIVAT UNGARAN\n\n📄 *Dokumen Nota Penagihan & Rapor Gambar/PDF lengkap* dapat diunduh/dicetak dari sistem atau diminta ke Admin.\n\nMohon konfirmasi jika pembayaran telah dilakukan. Terima kasih atas kepercayaan Bapak/Ibu! 🙏✨`;
+    const message = `Yth. Bapak/Ibu *${student.parentName}* (Orang Tua dari *${student.name}*),\n\nSalam hangat dari Management *Les Privat Ungaran*.\n\nBerikut kami lampirkan *Nota Penagihan SPP & Rincian Presensi Tentor* an. *${student.name}* (${student.grade} - ${student.school}) per tanggal ${dateNow}:\n\n🧾 *DETAIL NOTA TAGIHAN SPP*\n• No. Invoice: *${invoice.invoiceNumber}*\n• Total Sesi Terpakai: *${sessionCount} Sesi*\n\n👥 *RINCIAN SESI PER TENTOR PENGAJAR*:\n${tutorBreakdownLines}${additionalText}\n\n• *Total Tagihan Akhir*: *${formatRupiah(totalAmount)}*\n• Jumlah Terbayar: *${formatRupiah(invoice.amountPaid)}*\n• Sisa Kekurangan: *${formatRupiah(remaining)}*\n• Status Pembayaran: *${invoice.status.toUpperCase()}*\n• Jatuh Tempo: *${invoice.dueDate}*\n\n📚 *RINCIAN ABSENSI & JADWAL PENGAJARAN TENTOR*\n${recentMaterials || '  (Siswa mengikuti seluruh sesi dengan sangat antusias)'}\n\n💳 *REKENING PEMBAYARAN RESMI*\n• BNI: *1794373083* a.n Desti Ayu Rahmawati\n• BRI: *609501001575508* a.n Desti Ayu Rahmawati\n\n📄 *Dokumen Nota Penagihan & Rapor Gambar/PDF lengkap* dapat diunduh/dicetak dari sistem atau diminta ke Admin.\n\nMohon konfirmasi jika pembayaran telah dilakukan. Terima kasih atas kepercayaan Bapak/Ibu! 🙏✨`;
 
     const encodedText = encodeURIComponent(message);
     const waUrl = `https://wa.me/${student.parentWA}?text=${encodedText}`;
@@ -214,11 +214,11 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
           <div className="flex flex-col md:flex-row justify-between items-start md:items-stretch gap-6 pb-6 border-b-4 border-double border-slate-900">
             {/* Left Brand Identity */}
             <div className="flex items-center gap-4">
-              <div className="p-1 bg-white border border-slate-200 rounded-2xl shadow-xs shrink-0">
+              <div className="p-1.5 bg-white border border-slate-200 rounded-2xl shadow-xs shrink-0">
                 <img
                   src={invoiceLogo}
                   alt="Les Privat Ungaran Logo"
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-xl"
+                  className="w-24 h-24 sm:w-28 sm:h-28 object-contain rounded-xl"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -239,9 +239,10 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
 
             {/* Right Invoice Meta Card */}
             <div className="w-full md:w-auto flex flex-col justify-between items-start md:items-end text-left md:text-right">
-              <div className="bg-slate-900 text-white rounded-xl px-4 py-2 border border-slate-800 inline-block shadow-sm">
-                <span className="text-[9px] font-black tracking-widest uppercase block text-emerald-400">Nota Penagihan SPP</span>
-                <span className="text-sm font-mono font-bold tracking-tight">No. {invoice.invoiceNumber}</span>
+              <div className="bg-slate-900 text-white rounded-xl px-4 py-2.5 border border-slate-800 flex flex-row items-center gap-3 shadow-sm">
+                <span className="text-[11px] font-extrabold tracking-wider uppercase text-emerald-400 whitespace-nowrap">Nota Penagihan SPP</span>
+                <span className="text-slate-500 font-bold">|</span>
+                <span className="text-xs sm:text-sm font-mono font-bold tracking-tight whitespace-nowrap">No. {invoice.invoiceNumber}</span>
               </div>
               <div className="text-xs text-slate-500 mt-2 space-y-0.5">
                 <div>Tanggal Terbit: <strong className="text-slate-800 font-semibold">{invoice.createdAt || new Date().toISOString().substring(0, 10)}</strong></div>
@@ -292,16 +293,16 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
                 <h3 className="font-extrabold text-[11px] text-emerald-950 uppercase tracking-wider">Rangkuman Sesi & Status</h3>
               </div>
               <div className="grid grid-cols-3 text-xs gap-y-1.5 gap-x-1">
-                <span className="text-slate-500 font-medium">Status</span>
-                <span className="col-span-2">
-                  : <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] uppercase tracking-wider inline-block ${
-                    invoice.status === 'Lunas'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                      : 'bg-rose-100 text-rose-800 border border-rose-200'
-                  }`}>
-                    {invoice.status}
-                  </span>
-                </span>
+                {invoice.status === 'Lunas' && (
+                  <>
+                    <span className="text-slate-500 font-medium">Status</span>
+                    <span className="col-span-2">
+                      : <span className="px-2.5 py-0.5 rounded-full font-black text-[10px] uppercase tracking-wider inline-block bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {invoice.status}
+                      </span>
+                    </span>
+                  </>
+                )}
 
                 <span className="text-slate-500 font-medium">Bulan / Sesi</span>
                 <span className="col-span-2 text-slate-800 font-bold">: {sessionCount} Sesi Pertemuan</span>
@@ -478,7 +479,7 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
                     <span className="text-[10px] text-slate-400 block font-sans">BANK BNI</span>
                     <strong>1794373083</strong>
                   </div>
-                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-sans">a.n LES PRIVAT UNGARAN</span>
+                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-sans">a.n Desti Ayu Rahmawati</span>
                 </div>
                 
                 <div className="flex justify-between items-center bg-white p-2 rounded border border-slate-100">
@@ -486,7 +487,7 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
                     <span className="text-[10px] text-slate-400 block font-sans">BANK BRI</span>
                     <strong>609501001575508</strong>
                   </div>
-                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-sans">a.n LES PRIVAT UNGARAN</span>
+                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-sans">a.n Desti Ayu Rahmawati</span>
                 </div>
                 <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1 font-sans">
                   ✓ Mohon kirimkan foto/screenshoot bukti transfer ke Admin WA.
