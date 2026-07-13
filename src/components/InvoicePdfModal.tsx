@@ -75,17 +75,30 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
 
   // High-resolution JPG download via html-to-image
   const handleDownloadJpg = () => {
-    if (printRef.current === null) return;
+    const node = printRef.current;
+    if (node === null) return;
     setIsGeneratingJpg(true);
 
-    // Render with 2x pixel ratio for crystal clear text on mobile/WhatsApp
-    toJpeg(printRef.current, {
+    // Temporarily measure the scroll height of the node with a standard width of 800px 
+    // to guarantee that the download image is full-sized and never truncated.
+    const originalWidthStyle = node.style.width;
+    node.style.width = '800px';
+    const computedHeight = node.scrollHeight;
+    node.style.width = originalWidthStyle;
+
+    // Render with 2.5x pixel ratio for ultra crisp text and perfect layout on all devices
+    toJpeg(node, {
       quality: 0.98,
       backgroundColor: '#ffffff',
-      pixelRatio: 2,
+      pixelRatio: 2.5,
+      width: 800,
+      height: computedHeight,
       style: {
         transform: 'scale(1)',
         transformOrigin: 'top left',
+        width: '800px',
+        height: `${computedHeight}px`,
+        overflow: 'visible',
       }
     })
       .then((dataUrl) => {
@@ -184,7 +197,8 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
         </div>
 
         {/* DOCUMENT CONTENT TO PRINT */}
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-slate-800 bg-white" ref={printRef} id="printable-invoice">
+        <div className="overflow-y-auto flex-1 bg-white print:overflow-visible">
+          <div className="p-6 sm:p-8 space-y-6 text-slate-800 bg-white" ref={printRef} id="printable-invoice">
 
           {/* Print specific CSS rule */}
           <style>{`
@@ -571,6 +585,7 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
           </div>
 
         </div>
+      </div>
 
         {/* Modal Footer Actions */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
