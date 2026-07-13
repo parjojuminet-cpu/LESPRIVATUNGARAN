@@ -211,8 +211,8 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
           `}</style>
 
           {/* 1. KOP SURAT BIMBEL */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-stretch gap-6 pb-6 border-b-4 border-double border-slate-900">
-            {/* Left Brand Identity */}
+          <div className="flex flex-col gap-4 pb-6 border-b-4 border-double border-slate-900">
+            {/* Top Row: Brand Identity */}
             <div className="flex items-center gap-4">
               <div className="p-1.5 bg-white border border-slate-200 rounded-2xl shadow-xs shrink-0">
                 <img
@@ -237,14 +237,14 @@ export const InvoicePdfModal: React.FC<InvoicePdfModalProps> = ({
               </div>
             </div>
 
-            {/* Right Invoice Meta Card */}
-            <div className="w-full lg:w-auto flex flex-col justify-between items-start lg:items-end text-left lg:text-right mt-4 lg:mt-0">
-              <div className="bg-slate-900 text-white rounded-xl px-4 py-2.5 border border-slate-800 flex flex-row items-center gap-3 shadow-sm">
+            {/* Bottom Row: Invoice Meta Card */}
+            <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center text-left mt-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 gap-3">
+              <div className="bg-slate-900 text-white rounded-xl px-4 py-2 border border-slate-800 flex flex-row items-center gap-3 shadow-sm shrink-0">
                 <span className="text-[11px] font-extrabold tracking-wider uppercase text-emerald-400 whitespace-nowrap">Nota Penagihan SPP</span>
                 <span className="text-slate-500 font-bold">|</span>
                 <span className="text-xs sm:text-sm font-mono font-bold tracking-tight whitespace-nowrap">No. {invoice.invoiceNumber}</span>
               </div>
-              <div className="text-xs text-slate-500 mt-2 space-y-0.5">
+              <div className="text-xs text-slate-600 space-y-0.5 text-left sm:text-right w-full sm:w-auto">
                 <div>Tanggal Terbit: <strong className="text-slate-800 font-semibold">{invoice.createdAt || new Date().toISOString().substring(0, 10)}</strong></div>
                 <div>Jatuh Tempo: <strong className="text-rose-600 font-bold">{invoice.dueDate}</strong></div>
                 {invoice.isRevised && (
