@@ -50,7 +50,7 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
   const handleUploadModule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!driveFileUrl.trim()) {
-      alert('Silakan isi URL Google Drive atau pilih file lokal!');
+      alert('Silakan isi URL Link Website/Cloud atau pilih file lokal!');
       return;
     }
 
@@ -324,7 +324,7 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download / Buka Materi</span>
+                    <span>{mod.fileType === 'WEBSITE' ? 'Buka Website Materi' : 'Download / Buka Materi'}</span>
                   </a>
 
                   <button
@@ -428,7 +428,7 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
                       uploadType === 'url' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Link Google Drive / Cloud
+                    Link Website / Cloud Drive
                   </button>
                   <button
                     type="button"
@@ -444,16 +444,16 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
 
               {uploadType === 'url' ? (
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">URL Link Google Drive / Cloud</label>
+                  <label className="block text-slate-700 font-bold mb-1">URL Link Website / Cloud Drive</label>
                   <input
                     type="url"
                     required
-                    placeholder="https://drive.google.com/file/d/..."
+                    placeholder="https://buku.kemdikbud.go.id/katalog/... atau link website materi"
                     value={driveFileUrl}
                     onChange={(e) => setDriveFileUrl(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Pastikan hak akses file di Google Drive diset "Siapa saja yang memiliki link".</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Anda dapat memasukkan link halaman website, portal baca online, atau Cloud Drive (Google Drive/Dropbox).</p>
                 </div>
               ) : (
                 <div>

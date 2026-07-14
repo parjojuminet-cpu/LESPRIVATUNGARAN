@@ -101,7 +101,21 @@ export function sanitizeErpDatabase(db: Partial<ErpDatabaseJson>): ErpDatabaseJs
 
   let cleanModules = (db.modules || []).filter(m => !DUMMY_IDS.has(m.id));
   for (const defaultMod of DEFAULT_JSON_MODULES) {
-    if (!cleanModules.some(m => m.id === defaultMod.id)) {
+    const existingIdx = cleanModules.findIndex(m => m.id === defaultMod.id);
+    if (existingIdx >= 0) {
+      // Overwrite/update to ensure the user gets the real download links we set
+      cleanModules[existingIdx] = {
+        ...cleanModules[existingIdx],
+        title: defaultMod.title,
+        subject: defaultMod.subject,
+        grade: defaultMod.grade,
+        driveFileUrl: defaultMod.driveFileUrl,
+        description: defaultMod.description,
+        fileType: defaultMod.fileType,
+        uploadedBy: defaultMod.uploadedBy,
+        uploadedAt: defaultMod.uploadedAt
+      };
+    } else {
       cleanModules.push(defaultMod);
     }
   }

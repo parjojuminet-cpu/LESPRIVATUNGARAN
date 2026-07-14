@@ -23,6 +23,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   onRefresh
 }) => {
   const [selectedScheduleId, setSelectedScheduleId] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
   const [status, setStatus] = useState<AttendanceStatus>('Hadir');
   const [materialCovered, setMaterialCovered] = useState('');
   const [progressNotes, setProgressNotes] = useState('');
@@ -113,10 +114,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const activeSch = schedules.find(s => s.id === activeScheduleId);
   const activeStudentId = activeSch?.studentId;
 
-  // Check if student has already been attended today (Anti-Duplicate Check on same calendar day)
-  const isAlreadyAttendedToday = attendances.some(a => 
+  // Check if student has already been attended on selected date (Anti-Duplicate Check on same calendar day)
+  const isAlreadyAttendedOnSelectedDate = attendances.some(a => 
     (a.scheduleId === activeScheduleId || (activeStudentId && a.studentId === activeStudentId)) && 
-    a.date === todayStr
+    a.date === selectedDate
   );
 
   // Apply Security Watermark (Date, Day, Time, Student, Tutor) to Canvas
@@ -337,7 +338,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
         scheduleId: sch.id,
         tutorId: sch.tutorId,
         studentId: sch.studentId,
-        date: new Date().toISOString().substring(0, 10),
+        date: selectedDate,
         selfieUrl: finalSelfie || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
         status: status as any,
         materialCovered: materialCovered.trim() || 'Pertemuan Les Rutin',
@@ -357,6 +358,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       setTutorFeedback('');
       setAdditionalNotes('');
       setSelfieUrl('');
+      setSelectedDate(new Date().toISOString().substring(0, 10));
       
       onRefresh();
     } catch (err: any) {
@@ -662,15 +664,31 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   </select>
                 </div>
 
-                {/* Warning Banner if Already Attended Today */}
-                {isAlreadyAttendedToday && (
+                {/* Date Picker */}
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Tanggal Pertemuan Les</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={todayStr}
+                    className="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-bold text-slate-800 text-xs"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Isi dengan tanggal pelaksanaan les yang sebenarnya (bisa memilih tanggal kemarin jika telat input).
+                  </p>
+                </div>
+
+                {/* Warning Banner if Already Attended On Selected Date */}
+                {isAlreadyAttendedOnSelectedDate && (
                   <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs text-amber-900 space-y-1 my-3 shadow-2xs">
                     <div className="flex items-center gap-2 font-extrabold text-amber-800">
                       <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>Siswa Ini Sudah Di-absen Hari Ini ({todayStr})</span>
+                      <span>Siswa Ini Sudah Di-absen pada Tanggal Terpilih ({selectedDate})</span>
                     </div>
                     <p className="text-[11px] text-amber-700 leading-relaxed">
-                      Presensi untuk siswa ini sudah tercatat hari ini. Sistem memblokir presensi ganda di tanggal yang sama agar kuota paket siswa tidak terpotong 2 kali.
+                      Presensi untuk siswa ini sudah tercatat pada tanggal yang dipilih. Sistem memblokir presensi ganda di tanggal yang sama agar kuota paket siswa tidak terpotong 2 kali.
                     </p>
                   </div>
                 )}
@@ -834,7 +852,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || availableSchedules.length === 0 || isAlreadyAttendedToday}
+                  disabled={isSubmitting || availableSchedules.length === 0 || isAlreadyAttendedOnSelectedDate}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
@@ -842,10 +860,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       <Loader2 className="w-4 h-4 animate-spin text-emerald-200" />
                       <span>Menyimpan &amp; Memproses Absensi...</span>
                     </>
-                  ) : isAlreadyAttendedToday ? (
+                  ) : isAlreadyAttendedOnSelectedDate ? (
                     <>
                       <AlertTriangle className="w-4 h-4 text-amber-200" />
-                      <span>Sudah Di-absen Hari Ini (Mencegah Duplikasi)</span>
+                      <span>Sudah Di-absen pada Tanggal Terpilih</span>
                     </>
                   ) : (
                     <>
