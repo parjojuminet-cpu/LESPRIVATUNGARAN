@@ -334,16 +334,19 @@ app.get('/api/attendances', (req, res) => {
 app.post('/api/attendances', (req, res) => {
   const { scheduleId, studentId, tutorId, date } = req.body;
 
-  // Anti-Duplicate Check: prevent duplicate attendance for same schedule on the same date
+  // Pure Quota-Slot Duplication Guard: maximum 1 'Hadir' attendance per student on any given calendar date
   const targetDate = date || new Date().toISOString().substring(0, 10);
+  const isIncomingHadir = req.body.status === 'Hadir' || !req.body.status;
   const existing = attendances.find(a => 
-    (a.scheduleId === scheduleId || (a.studentId === studentId && a.tutorId === tutorId)) && 
-    a.date === targetDate
+    a.studentId === studentId && 
+    a.date === targetDate &&
+    a.status === 'Hadir' &&
+    isIncomingHadir
   );
 
   if (existing) {
     return res.status(400).json({ 
-      error: `Absensi untuk jadwal/siswa ini pada tanggal ${targetDate} sudah pernah diisi sebelumnya. Mencegah duplikasi potongan paket & double billing gaji tentor.` 
+      error: `Siswa ini sudah memiliki laporan presensi 'Hadir' pada tanggal ${targetDate}. Sistem memblokir pengambilan kuota ganda di hari yang sama untuk melindungi kuota paket siswa.` 
     });
   }
 

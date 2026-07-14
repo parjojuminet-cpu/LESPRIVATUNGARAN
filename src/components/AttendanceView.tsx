@@ -130,8 +130,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
   // Check if student has already been attended on selected date (Anti-Duplicate Check on same calendar day)
   const isAlreadyAttendedOnSelectedDate = attendances.some(a => 
-    (a.scheduleId === activeScheduleId || (activeStudentId && a.studentId === activeStudentId)) && 
-    a.date === selectedDate
+    activeStudentId && a.studentId === activeStudentId && 
+    a.date === selectedDate &&
+    a.status === 'Hadir' &&
+    status === 'Hadir'
   );
 
   // Apply Security Watermark (Date, Day, Time, Student, Tutor) to Canvas
@@ -649,9 +651,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                 <div className="bg-indigo-50/80 border border-indigo-200 p-3 rounded-xl text-xs text-indigo-950 flex items-start gap-2.5">
                   <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="font-extrabold text-indigo-900">Sistem Presensi Fleksibel (Berbasis Kuota Paket):</span>
+                    <span className="font-extrabold text-indigo-900">Sistem Presensi Fleksibel (Murni Kuota):</span>
                     <p className="text-[11px] text-indigo-800 leading-relaxed">
-                      Tentor bebas melakukan presensi pada hari apa saja (Senin, Selasa, dst.) sesuai jadwal riil di lapangan. Hari &amp; jam pada pilihan hanya referensi rutin. <strong className="text-indigo-950 underline">Pengaman: Maksimal 1x absen per siswa dalam 1 hari kalender.</strong>
+                      Tentor bebas menentukan hari apa saja untuk melakukan sesi belajar sesuai kesepakatan riil di lapangan. <strong className="text-indigo-950 underline">Pengaman: Maksimal 1x absen Hadir per murid dalam 1 hari kalender.</strong>
                     </p>
                   </div>
                 </div>
@@ -685,12 +687,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    max={todayStr}
                     className="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-bold text-slate-800 text-xs"
                     required
                   />
                   <p className="text-[10px] text-slate-500 mt-1">
-                    Isi dengan tanggal pelaksanaan les yang sebenarnya (bisa memilih tanggal kemarin jika telat input).
+                    Isi dengan tanggal pelaksanaan les yang sebenarnya (bebas memilih hari apa saja).
                   </p>
                 </div>
 
@@ -699,10 +700,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs text-amber-900 space-y-1 my-3 shadow-2xs">
                     <div className="flex items-center gap-2 font-extrabold text-amber-800">
                       <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>Siswa Ini Sudah Di-absen pada Tanggal Terpilih ({selectedDate})</span>
+                      <span>Murid Ini Sudah Memiliki Absen Hadir pada Tanggal Terpilih ({selectedDate})</span>
                     </div>
                     <p className="text-[11px] text-amber-700 leading-relaxed">
-                      Presensi untuk siswa ini sudah tercatat pada tanggal yang dipilih. Sistem memblokir presensi ganda di tanggal yang sama agar kuota paket siswa tidak terpotong 2 kali.
+                      Sistem mendeteksi adanya laporan presensi 'Hadir' pada tanggal ini. Sistem memblokir pengambilan kuota ganda di hari yang sama demi melindungi sisa kuota paket murid.
                     </p>
                   </div>
                 )}
