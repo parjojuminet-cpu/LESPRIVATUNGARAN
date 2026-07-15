@@ -215,21 +215,51 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     try {
       setFacingMode(mode);
       setIsCameraActive(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: { ideal: mode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+      
+      let stream: MediaStream;
+      try {
+        // Try with ideal constraints first
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: { ideal: mode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+      } catch (firstErr) {
+        console.warn('First camera attempt failed, trying fallback constraints:', firstErr);
+        try {
+          // Fallback to simpler constraints specifying facingMode
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: { ideal: mode }
+            }
+          });
+        } catch (secErr) {
+          console.warn('Second camera attempt failed, trying basic video:', secErr);
+          // Ultimate fallback to generic video capture
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
         }
-      });
+      }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
       console.warn('Camera access error:', err);
-      alert('Gagal mengakses kamera device. Pastikan Anda telah mengizinkan akses kamera di browser.');
       setIsCameraActive(false);
+      
+      // Auto fallback to native device camera
+      if (window.confirm('Gagal membuka kamera langsung di browser. Apakah Anda ingin mengambil foto menggunakan Kamera Bawaan HP Anda sebagai gantinya?')) {
+        setTimeout(() => {
+          directNativeCameraInputRef.current?.click();
+        }, 100);
+      } else {
+        alert('Gagal mengakses kamera device. Silakan izinkan akses kamera di pengaturan browser Anda.');
+      }
     }
   };
 
@@ -237,8 +267,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     if (videoRef.current && streamRef.current) {
       const video = videoRef.current;
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
+      
+      // Safe fallback for video dimensions
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      if (!width || width < 100) width = 1280;
+      if (!height || height < 100) height = 720;
+      
+      canvas.width = width;
+      canvas.height = height;
+      
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (facingMode === 'user') {
@@ -856,6 +894,26 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                               <div className="text-[10px] text-slate-300 font-normal">Foto Suasana Les / Buku</div>
                             </div>
                           </button>
+                        </div>
+
+                        {/* Native Camera Capture alternative for resilient saves */}
+                        <div className="pt-2 border-t border-dashed border-slate-200">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFacingMode('environment');
+                              setTimeout(() => {
+                                directNativeCameraInputRef.current?.click();
+                              }, 100);
+                            }}
+                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border border-amber-200 transition-all shadow-3xs"
+                          >
+                            <Camera className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>Alternatif: Ambil Foto Menggunakan Kamera HP Bawaan</span>
+                          </button>
+                          <p className="text-[10px] text-center text-slate-500 mt-1 leading-relaxed">
+                            Gunakan tombol alternatif di atas jika kamera langsung di web bermasalah / blank hitam.
+                          </p>
                         </div>
                       </div>
                     )}
