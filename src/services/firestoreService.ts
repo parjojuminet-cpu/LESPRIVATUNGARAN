@@ -151,7 +151,6 @@ export async function loadFromFirestore(): Promise<ErpDatabaseJson> {
       const remoteData = docSnap.data() as ErpDatabaseJson;
       const sanitized = sanitizeErpDatabase(remoteData);
       saveErpJsonDatabase(sanitized);
-      saveToFirestore(sanitized).catch(() => {});
       return sanitized;
     } else {
       // If Firestore is empty, initialize it with current local data

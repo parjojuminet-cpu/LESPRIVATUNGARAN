@@ -263,28 +263,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    // 1. Initial load from Cloud Firestore
-    loadFromFirestore().then(cloudDb => {
-      if (cloudDb) {
-        if (cloudDb.students?.length) setStudents(cloudDb.students);
-        if (cloudDb.tutors?.length) setTutors(cloudDb.tutors);
-        if (cloudDb.parents?.length) setParents(cloudDb.parents);
-        if (cloudDb.subjects?.length) setSubjects(cloudDb.subjects);
-        if (cloudDb.workingAreas?.length) setWorkingAreas(cloudDb.workingAreas);
-        if (cloudDb.schedules?.length) setSchedules(cloudDb.schedules);
-        if (cloudDb.attendances?.length) setAttendances(cloudDb.attendances);
-        if (cloudDb.invoices?.length) setInvoices(cloudDb.invoices);
-        if (cloudDb.finance?.length) setFinance(cloudDb.finance);
-        if (cloudDb.salaries?.length) setSalaries(cloudDb.salaries);
-        if (cloudDb.approvals?.length) setApprovals(cloudDb.approvals);
-        if (cloudDb.modules?.length) setModules(cloudDb.modules);
-        if (cloudDb.settings?.length) setSettings(cloudDb.settings);
-        if (cloudDb.auditLogs?.length) setAuditLogs(cloudDb.auditLogs);
-        if (cloudDb.users?.length) setUsers(cloudDb.users);
-      }
-    });
-
-    // 2. Subscribe to real-time sync across all devices
+    // 1. Subscribe to real-time sync across all devices
     const unsubscribe = subscribeToFirestore((rawCloudDb) => {
       if (rawCloudDb) {
         const cloudDb = sanitizeErpDatabase(rawCloudDb);
