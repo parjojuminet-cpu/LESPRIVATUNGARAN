@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import {
   DEFAULT_JSON_USERS,
@@ -873,6 +872,7 @@ app.post('/api/sheets/import', (req, res) => {
 // START SERVER WITH VITE MIDDLEWARE
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa'
