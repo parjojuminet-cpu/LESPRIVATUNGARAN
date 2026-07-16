@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
+import fs from 'fs';
 import {
   DEFAULT_JSON_USERS,
   DEFAULT_JSON_TUTORS,
@@ -45,6 +46,112 @@ let sheetSyncStatus = {
   lastSyncTime: null,
   errorMessage: null
 };
+
+const DB_FILE_PATH = path.join(process.cwd(), 'server_db.json');
+
+function loadServerDb() {
+  try {
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const raw = fs.readFileSync(DB_FILE_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.students)) students = data.students;
+        if (Array.isArray(data.tutors)) tutors = data.tutors;
+        if (Array.isArray(data.parents)) parents = data.parents;
+        if (Array.isArray(data.subjects)) subjects = data.subjects;
+        if (Array.isArray(data.workingAreas)) workingAreas = data.workingAreas;
+        if (Array.isArray(data.schedules)) schedules = data.schedules;
+        if (Array.isArray(data.attendances)) attendances = data.attendances;
+        if (Array.isArray(data.invoices)) invoices = data.invoices;
+        if (Array.isArray(data.finance)) finance = data.finance;
+        if (Array.isArray(data.salaries)) salaries = data.salaries;
+        if (Array.isArray(data.approvals)) approvals = data.approvals;
+        if (Array.isArray(data.modules)) modules = data.modules;
+        if (Array.isArray(data.settings)) settings = data.settings;
+        if (Array.isArray(data.users)) users = data.users;
+        if (Array.isArray(data.auditLogs)) auditLogs = data.auditLogs;
+        console.log('Successfully loaded database from server_db.json');
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load database from server_db.json, using defaults:', err);
+  }
+}
+
+function saveServerDb() {
+  try {
+    const data = {
+      students,
+      tutors,
+      parents,
+      subjects,
+      workingAreas,
+      schedules,
+      attendances,
+      invoices,
+      finance,
+      salaries,
+      approvals,
+      modules,
+      settings,
+      users,
+      auditLogs,
+      updatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Failed to save database to server_db.json:', err);
+  }
+}
+
+// Load DB immediately on server startup
+loadServerDb();
+
+app.get('/api/db', (req, res) => {
+  res.json({
+    students,
+    tutors,
+    parents,
+    subjects,
+    workingAreas,
+    schedules,
+    attendances,
+    invoices,
+    finance,
+    salaries,
+    approvals,
+    modules,
+    settings,
+    users,
+    auditLogs
+  });
+});
+
+app.post('/api/db', (req, res) => {
+  const data = req.body;
+  if (data && typeof data === 'object') {
+    if (Array.isArray(data.students)) students = data.students;
+    if (Array.isArray(data.tutors)) tutors = data.tutors;
+    if (Array.isArray(data.parents)) parents = data.parents;
+    if (Array.isArray(data.subjects)) subjects = data.subjects;
+    if (Array.isArray(data.workingAreas)) workingAreas = data.workingAreas;
+    if (Array.isArray(data.schedules)) schedules = data.schedules;
+    if (Array.isArray(data.attendances)) attendances = data.attendances;
+    if (Array.isArray(data.invoices)) invoices = data.invoices;
+    if (Array.isArray(data.finance)) finance = data.finance;
+    if (Array.isArray(data.salaries)) salaries = data.salaries;
+    if (Array.isArray(data.approvals)) approvals = data.approvals;
+    if (Array.isArray(data.modules)) modules = data.modules;
+    if (Array.isArray(data.settings)) settings = data.settings;
+    if (Array.isArray(data.users)) users = data.users;
+    if (Array.isArray(data.auditLogs)) auditLogs = data.auditLogs;
+    
+    saveServerDb();
+    res.json({ success: true, message: 'Database updated successfully on server' });
+  } else {
+    res.status(400).json({ error: 'Invalid database data' });
+  }
+});
 
 // API ROUTES
 app.get('/api/dashboard/stats', (req, res) => {

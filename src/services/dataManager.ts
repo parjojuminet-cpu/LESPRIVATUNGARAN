@@ -12,9 +12,18 @@ export async function persistDatabaseUpdate(updater: (db: ErpDatabaseJson) => Er
   const nextDb = updater(currentDb);
   saveErpJsonDatabase(nextDb);
   
-  // Wait for cloud Firestore save to ensure consistent reads and avoid UI race conditions
-  await saveToFirestore(nextDb).catch(err => {
+  // 1. Save to Cloud Firestore
+  saveToFirestore(nextDb).catch(err => {
     console.warn('Background Firestore save status:', err);
+  });
+
+  // 2. Dual-write backup to Express server
+  fetch('/api/db', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(nextDb)
+  }).catch(err => {
+    console.warn('Background Express server save status:', err);
   });
   
   return nextDb;
