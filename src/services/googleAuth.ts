@@ -1,81 +1,74 @@
-import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import defaultFirebaseConfig from '../../firebase-applet-config.json';
+// Custom lightweight OAuth 2.0 Implicit Flow for Google Sheets Integration
+// Completely detached from Firebase Auth SDK for standard web hosting (Rumah Web, etc.)
 
-const activeFirebaseConfig = {
-  apiKey: defaultFirebaseConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY,
-  authDomain: defaultFirebaseConfig.authDomain || (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: defaultFirebaseConfig.projectId || (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: defaultFirebaseConfig.storageBucket || (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: defaultFirebaseConfig.messagingSenderId || (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: defaultFirebaseConfig.appId || (import.meta as any).env?.VITE_FIREBASE_APP_ID,
-};
-
-const provider = new GoogleAuthProvider();
-provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-provider.addScope('https://www.googleapis.com/auth/drive.file');
-provider.setCustomParameters({ prompt: 'consent' });
-
-let isSigningIn = false;
 let cachedAccessToken: string | null = localStorage.getItem('google_access_token');
 
-export const initAuth = (
-  onAuthSuccess?: (user: User, token: string) => void,
-  onAuthFailure?: () => void
-) => {
-  return onAuthStateChanged(auth, async (user: User | null) => {
-    if (user) {
-      const token = cachedAccessToken || localStorage.getItem('google_access_token');
-      if (token) {
-        cachedAccessToken = token;
-        if (onAuthSuccess) onAuthSuccess(user, token);
-      } else if (!isSigningIn) {
-        if (onAuthFailure) onAuthFailure();
-      }
+export const googleSignIn = async (): Promise<{ user: { email: string; displayName: string }; accessToken: string } | null> => {
+  // Let the user specify Google Client ID if not saved
+  let clientId = localStorage.getItem('erp_google_client_id');
+  if (!clientId) {
+    const input = prompt(
+      'Silakan masukkan Google OAuth Client ID Anda untuk Google Sheets:\n' +
+      '(Dapatkan Client ID dari Google Cloud Console -> Credentials)'
+    );
+    if (input) {
+      clientId = input.trim();
+      localStorage.setItem('erp_google_client_id', clientId);
     } else {
-      cachedAccessToken = null;
-      localStorage.removeItem('google_access_token');
-      if (onAuthFailure) onAuthFailure();
+      throw new Error('Google Client ID diperlukan untuk sinkronisasi Google Sheets.');
     }
-  });
-};
-
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
-  try {
-    isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('Gagal mendapatkan token akses dari Google Auth');
-    }
-
-    cachedAccessToken = credential.accessToken;
-    localStorage.setItem('google_access_token', credential.accessToken);
-    return { user: result.user, accessToken: cachedAccessToken };
-  } catch (error: any) {
-    console.error('Google Sign-In Error:', error);
-    if (error.code === 'auth/unauthorized-domain') {
-      const currentHost = window.location.hostname;
-      throw new Error(
-        `Domain (${currentHost}) belum diizinkan pada proyek Firebase ("${activeFirebaseConfig.projectId}").\n\n` +
-        `Silakan buka Firebase Console -> Authentication -> Settings -> Authorized domains dan pastikan "${currentHost}" sudah ditambahkan.`
-      );
-    }
-    if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error(
-        'Jendela login Google ditutup sebelum proses selesai.\n\n' +
-        'Tips:\n' +
-        '1. Pastikan Anda tidak menutup jendela pop-up sebelum memilih akun dan menekan "Izinkan/Allow".\n' +
-        '2. Jika mencoba akun Google lain, pastikan email tersebut sudah ditambahkan ke "Test users" di Google Cloud Console (jika OAuth masih status "Testing").'
-      );
-    }
-    if (error.code === 'auth/popup-blocked') {
-      throw new Error('Pop-up browser terblokir oleh browser Anda. Izinkan pop-up untuk domain ini dan coba lagi.');
-    }
-    throw error;
-  } finally {
-    isSigningIn = false;
   }
+
+  const scopes = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive.file'
+  ].join(' ');
+
+  const redirectUri = window.location.origin + '/oauth2callback.html';
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+    redirectUri
+  )}&response_type=token&scope=${encodeURIComponent(scopes)}&prompt=consent`;
+
+  // Open the pop-up window
+  const popup = window.open(authUrl, 'GoogleAuthPopup', 'width=550,height=650');
+  if (!popup) {
+    throw new Error('Popup login terblokir oleh browser Anda. Harap aktifkan izin pop-up dan coba lagi.');
+  }
+
+  return new Promise((resolve, reject) => {
+    // 1. Listen for message from callback window (Secure postMessage)
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data && event.data.type === 'oauth_response') {
+        const hash = event.data.hash;
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+
+        if (accessToken) {
+          cachedAccessToken = accessToken;
+          localStorage.setItem('google_access_token', accessToken);
+          window.removeEventListener('message', handleMessage);
+          clearInterval(checkPopup);
+          if (popup && !popup.closed) popup.close();
+          resolve({
+            user: { email: 'user@google-sheets', displayName: 'Google Sheets User' },
+            accessToken
+          });
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // 2. Poll the popup to handle manual cancellation
+    const checkPopup = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(checkPopup);
+        window.removeEventListener('message', handleMessage);
+        reject(new Error('Proses login Google Sheets dibatalkan oleh pengguna (Popup ditutup).'));
+      }
+    }, 1000);
+  });
 };
 
 export const getAccessToken = (): string | null => {
@@ -83,7 +76,6 @@ export const getAccessToken = (): string | null => {
 };
 
 export const logoutGoogle = async () => {
-  await auth.signOut();
   cachedAccessToken = null;
   localStorage.removeItem('google_access_token');
 };

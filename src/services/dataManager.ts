@@ -1,31 +1,17 @@
 import { ErpDatabaseJson, loadErpJsonDatabase, saveErpJsonDatabase } from './jsonStorage';
-import { saveToFirestore } from './firestoreService';
 import {
   Student, Tutor, Parent, Subject, WorkingArea, Schedule,
   Attendance, Invoice, Finance, TutorSalary, Module, Approval,
   Setting, AuditLog, User, PackageStatus
 } from '../types';
 
-// Helper to update full database state locally & in Cloud Firestore
+// Helper to update full database state locally
 export async function persistDatabaseUpdate(updater: (db: ErpDatabaseJson) => ErpDatabaseJson): Promise<ErpDatabaseJson> {
   const currentDb = loadErpJsonDatabase();
   const nextDb = updater(currentDb);
   saveErpJsonDatabase(nextDb);
   
-  // Check if Firestore sync is enabled in settings
-  const firestoreSetting = currentDb.settings?.find(s => s.key === 'USE_FIRESTORE_DATABASE');
-  const useFirestore = firestoreSetting ? (firestoreSetting.value === true) : false;
-
-  // 1. Save to Cloud Firestore only if explicitly enabled
-  if (useFirestore) {
-    saveToFirestore(nextDb).catch(err => {
-      console.warn('Background Firestore save status:', err);
-    });
-  } else {
-    console.log('Skipping Firestore save: USE_FIRESTORE_DATABASE is disabled');
-  }
-
-  // 2. Dual-write backup to Express server
+  // Dual-write backup to Express server
   fetch('/api/db', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -15,7 +15,6 @@ import {
   loadErpJsonDatabase,
   saveErpJsonDatabase
 } from '../services/jsonStorage';
-import { saveToFirestore } from '../services/firestoreService';
 import {
   exportDatabaseToExcelXls,
   exportPrintablePDFReport,
@@ -112,7 +111,6 @@ export const JsonDatabaseView: React.FC<JsonDatabaseViewProps> = ({
       };
 
       saveErpJsonDatabase(updatedDb);
-      await saveToFirestore(updatedDb);
 
       try {
         let endpoint = '';
@@ -165,7 +163,6 @@ export const JsonDatabaseView: React.FC<JsonDatabaseViewProps> = ({
       };
 
       saveErpJsonDatabase(updatedDb);
-      await saveToFirestore(updatedDb);
       setEditingItem(null);
       setEditingTableKey(null);
       onRefresh();
@@ -1092,12 +1089,10 @@ export const JsonDatabaseView: React.FC<JsonDatabaseViewProps> = ({
                     const parsed = JSON.parse(textToSave);
                     if (jsonScope === 'ALL') {
                       saveErpJsonDatabase(parsed);
-                      await saveToFirestore(parsed);
                     } else {
                       const fullDb = loadErpJsonDatabase();
                       const updatedDb = { ...fullDb, [jsonScope]: parsed };
                       saveErpJsonDatabase(updatedDb);
-                      await saveToFirestore(updatedDb);
                     }
                     onRefresh();
                     alert('Database JSON berhasil diperbarui!');

@@ -27,14 +27,6 @@ import {
   importDatabaseFromJson,
   resetDatabaseToDefaultJson
 } from './services/jsonStorage';
-import {
-  loadFromFirestore,
-  saveToFirestore,
-  subscribeToFirestore,
-  setQuotaExceededListener,
-  resetQuotaExceededStatus,
-  getQuotaExceeded
-} from './services/firestoreService';
 
 export default function App() {
   // Initial load from JSON storage (localStorage / default dataset)
@@ -57,14 +49,6 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialDb.auditLogs);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [syncStatus, setSyncStatus] = useState<any>(null);
-  const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
-
-  useEffect(() => {
-    const unsubQuota = setQuotaExceededListener((exceeded) => {
-      setIsQuotaExceeded(exceeded);
-    });
-    return () => unsubQuota();
-  }, []);
 
   // Dynamic recalculation of stats whenever data updates
   useEffect(() => {
@@ -202,19 +186,65 @@ export default function App() {
 
   // Fetch all database state
   const loadAllData = async () => {
-    // 1. Determine if Firestore is enabled in settings
     const currentDb = loadErpJsonDatabase();
-    const firestoreSetting = currentDb.settings?.find(s => s.key === 'USE_FIRESTORE_DATABASE');
-    const useFirestore = firestoreSetting ? (firestoreSetting.value === true) : false;
 
-    // 2. Always fetch from Express Server first as the primary database
+    // Always fetch from Express Server first as the primary database
     try {
       console.log('Fetching database from Express server /api/db as primary source of truth...');
       const response = await fetch('/api/db');
       if (response.ok) {
         const serverDb = await response.json();
         if (serverDb && serverDb.students) {
-          const sanitized = sanitizeErpDatabase(serverDb);
+          let sanitized = sanitizeErpDatabase(serverDb);
+
+          // SAFE MERGING MECHANISM: Prevent overwriting existing client LocalStorage transaction data
+          // if the server is in a fresh/uninitialized default state (which has empty transaction arrays)
+          const mergeArrayById = <T extends { id: string }>(localArr: T[], serverArr: T[]): T[] => {
+            const map = new Map<string, T>();
+            (localArr || []).forEach(item => {
+              if (item && item.id) map.set(item.id, item);
+            });
+            (serverArr || []).forEach(item => {
+              if (item && item.id) map.set(item.id, item);
+            });
+            return Array.from(map.values());
+          };
+
+          const hasLocalData = (currentDb.attendances && currentDb.attendances.length > 0) ||
+                               (currentDb.invoices && currentDb.invoices.length > 0) ||
+                               (currentDb.finance && currentDb.finance.length > 0);
+
+          const serverIsEmpty = (!sanitized.attendances || sanitized.attendances.length === 0) &&
+                                (!sanitized.invoices || sanitized.invoices.length === 0) &&
+                                (!sanitized.finance || sanitized.finance.length === 0);
+
+          if (hasLocalData && serverIsEmpty) {
+            console.log('Server returned default/empty transactional data, restoring from client LocalStorage...');
+            sanitized = {
+              ...sanitized,
+              students: mergeArrayById(currentDb.students || [], sanitized.students || []),
+              tutors: mergeArrayById(currentDb.tutors || [], sanitized.tutors || []),
+              parents: mergeArrayById(currentDb.parents || [], sanitized.parents || []),
+              schedules: mergeArrayById(currentDb.schedules || [], sanitized.schedules || []),
+              attendances: currentDb.attendances || [],
+              invoices: currentDb.invoices || [],
+              finance: currentDb.finance || [],
+              salaries: currentDb.salaries || [],
+              approvals: currentDb.approvals || [],
+              auditLogs: mergeArrayById(currentDb.auditLogs || [], sanitized.auditLogs || []),
+              users: mergeArrayById(currentDb.users || [], sanitized.users || [])
+            };
+
+            // Upload the merged database back to the server to synchronize it
+            fetch('/api/db', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(sanitized)
+            }).then(res => {
+              if (res.ok) console.log('Successfully synchronized restored database to Express Server');
+            }).catch(e => console.warn('Error syncing restored database to server:', e));
+          }
+
           if (sanitized.students) setStudents(sanitized.students);
           if (sanitized.tutors) setTutors(sanitized.tutors);
           if (sanitized.parents) setParents(sanitized.parents);
@@ -231,11 +261,6 @@ export default function App() {
           if (sanitized.auditLogs) setAuditLogs(sanitized.auditLogs);
           if (sanitized.users) setUsers(sanitized.users);
           saveErpJsonDatabase(sanitized);
-
-          // Sync to Firestore in the background if enabled
-          if (useFirestore && !getQuotaExceeded()) {
-            saveToFirestore(sanitized).catch(() => {});
-          }
           
           // Fetch additional stats in background
           try {
@@ -257,47 +282,8 @@ export default function App() {
       console.warn('Express server database unreachable, falling back to other sources:', err);
     }
 
-    // 3. Fallback: load from Cloud Firestore if enabled
-    if (useFirestore) {
-      try {
-        console.log('Express server failed, falling back to Cloud Firestore...');
-        const rawCloudDb = await loadFromFirestore();
-        if (rawCloudDb && !getQuotaExceeded()) {
-          const cloudDb = sanitizeErpDatabase(rawCloudDb);
-          if (cloudDb.students) setStudents(cloudDb.students);
-          if (cloudDb.tutors) setTutors(cloudDb.tutors);
-          if (cloudDb.parents) setParents(cloudDb.parents);
-          if (cloudDb.subjects) setSubjects(cloudDb.subjects);
-          if (cloudDb.workingAreas) setWorkingAreas(cloudDb.workingAreas);
-          if (cloudDb.schedules) setSchedules(cloudDb.schedules);
-          if (cloudDb.attendances) setAttendances(cloudDb.attendances);
-          if (cloudDb.invoices) setInvoices(cloudDb.invoices);
-          if (cloudDb.finance) setFinance(cloudDb.finance);
-          if (cloudDb.salaries) setSalaries(cloudDb.salaries);
-          if (cloudDb.approvals) setApprovals(cloudDb.approvals);
-          if (cloudDb.modules) setModules(cloudDb.modules);
-          if (cloudDb.settings) setSettings(cloudDb.settings);
-          if (cloudDb.auditLogs) setAuditLogs(cloudDb.auditLogs);
-          if (cloudDb.users) setUsers(cloudDb.users);
-          saveErpJsonDatabase(cloudDb);
-
-          // Push to Express Server to keep backup updated
-          fetch('/api/db', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cloudDb)
-          }).catch(() => {});
-          
-          setIsLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.warn('Cloud Firestore load failed:', error);
-      }
-    }
-
-    // 4. Ultimate fallback: Use local JSON Storage from localStorage (already loaded in state initials)
-    console.log('Both Express Server and Firestore are unavailable, using offline local state.');
+    // Ultimate fallback: Use local JSON Storage from localStorage (already loaded in state initials)
+    console.log('Express Server is unavailable, using offline local state.');
     const localDb = loadErpJsonDatabase();
     if (localDb.students) setStudents(localDb.students);
     if (localDb.tutors) setTutors(localDb.tutors);
@@ -331,38 +317,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    // 1. Subscribe to real-time sync across all devices (only processes updates if Firestore is enabled)
-    const unsubscribe = subscribeToFirestore((rawCloudDb) => {
-      // Check if Firestore sync is enabled in settings
-      const currentDb = loadErpJsonDatabase();
-      const firestoreSetting = currentDb.settings?.find(s => s.key === 'USE_FIRESTORE_DATABASE');
-      const useFirestore = firestoreSetting ? (firestoreSetting.value === true) : false;
-
-      if (!useFirestore) {
-        return;
-      }
-
-      if (rawCloudDb) {
-        const cloudDb = sanitizeErpDatabase(rawCloudDb);
-        if (cloudDb.students) setStudents(cloudDb.students);
-        if (cloudDb.tutors) setTutors(cloudDb.tutors);
-        if (cloudDb.parents) setParents(cloudDb.parents);
-        if (cloudDb.subjects) setSubjects(cloudDb.subjects);
-        if (cloudDb.workingAreas) setWorkingAreas(cloudDb.workingAreas);
-        if (cloudDb.schedules) setSchedules(cloudDb.schedules);
-        if (cloudDb.attendances) setAttendances(cloudDb.attendances);
-        if (cloudDb.invoices) setInvoices(cloudDb.invoices);
-        if (cloudDb.finance) setFinance(cloudDb.finance);
-        if (cloudDb.salaries) setSalaries(cloudDb.salaries);
-        if (cloudDb.approvals) setApprovals(cloudDb.approvals);
-        if (cloudDb.modules) setModules(cloudDb.modules);
-        if (cloudDb.settings) setSettings(cloudDb.settings);
-        if (cloudDb.auditLogs) setAuditLogs(cloudDb.auditLogs);
-        if (cloudDb.users) setUsers(cloudDb.users);
-      }
-    });
-
-    // 2. Poll Express Server /api/db to keep multiple tabs/devices synced in real time
+    // Poll Express Server /api/db to keep multiple tabs/devices synced in real time
     const intervalId = setInterval(async () => {
       try {
         const response = await fetch('/api/db');
@@ -396,7 +351,6 @@ export default function App() {
     loadAllData();
 
     return () => {
-      unsubscribe();
       clearInterval(intervalId);
     };
   }, []);
@@ -459,10 +413,9 @@ export default function App() {
       setIsLoading(true);
       const pulled = await pullErpDataFromSheet(token, spreadsheetId);
       
-      // Save pulled database directly to local storage and Firestore
+      // Save pulled database directly to local storage
       const sanitized = sanitizeErpDatabase(pulled);
       saveErpJsonDatabase(sanitized);
-      await saveToFirestore(sanitized).catch(e => console.warn('Firestore sync failed during sheet import:', e));
 
       await fetch('/api/sheets/import', {
         method: 'POST',
@@ -637,59 +590,6 @@ export default function App() {
 
         {/* Main Content View Container */}
         <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-32 lg:pb-8">
-          {isQuotaExceeded && (
-            <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-r-2xl p-4 sm:p-5 shadow-sm text-slate-800">
-              <div className="flex gap-3 sm:gap-4 items-start">
-                <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <h3 className="font-extrabold text-sm sm:text-base text-amber-900 flex flex-wrap items-center gap-2">
-                    <span>⚠️ Cloud Sync Quota Terlampaui (Offline Mode Aktif)</span>
-                    <span className="text-[10px] bg-amber-200/80 text-amber-900 border border-amber-300 font-extrabold px-2 py-0.5 rounded-full">Sistem Aman</span>
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Batas gratis harian database cloud Firebase (Firestore) telah tercapai hari ini. Sistem ERP Bimbel Anda otomatis beralih ke <strong>Mode Penyimpanan Lokal Offline</strong> yang aman.
-                  </p>
-                  <div className="bg-white/80 border border-amber-200/60 p-3 rounded-xl space-y-2 mt-2">
-                    <p className="text-xs text-slate-700 font-semibold flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-amber-600" />
-                      Semua aktivitas Anda (mengisi presensi, edit jadwal, mutasi keuangan, invoice) akan tersimpan dengan aman di browser peramban ini, dan otomatis tersinkronisasi kembali ke cloud setelah kuota di-reset besok.
-                    </p>
-                    {currentUser.role !== 'TENTOR' && (
-                      <p className="text-[11px] text-slate-500">
-                        *Sebagai Manajemen, Anda juga dapat mengunduh backup file kapan saja via tombol <strong>Backup JSON</strong> atau <strong>Unduh Excel</strong> di bagian atas.
-                      </p>
-                    )}
-                  </div>
-                  <div className="pt-2 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        resetQuotaExceededStatus();
-                        window.location.reload();
-                      }}
-                      className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white text-[11px] font-extrabold px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer border border-slate-700"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Coba Hubungkan Kembali</span>
-                    </button>
-                    {currentUser.role !== 'TENTOR' && (
-                      <a
-                        href="https://console.firebase.google.com/project/yttriferous-bastion-ngtt6/firestore/databases/ai-studio-a6fd37f5-19c0-4f4c-bf76-ee92222d0fe4/data?openUpgradeDialog=true"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-[11px] font-black px-3 py-2 rounded-xl transition-all shadow-xs border border-amber-700"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span>Buka Firebase Console & Upgrade Paket (Blaze)</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'dashboard' && (
             <DashboardView
               stats={stats}

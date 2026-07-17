@@ -230,6 +230,7 @@ app.post('/api/students', (req, res) => {
     user: 'OPERATOR',
     activity: `Menambahkan siswa baru: ${newStudent.name}`
   });
+  saveServerDb();
   res.json(newStudent);
 });
 
@@ -238,6 +239,7 @@ app.put('/api/students/:id', (req, res) => {
   const index = students.findIndex(s => s.id === id);
   if (index !== -1) {
     students[index] = { ...students[index], ...req.body };
+    saveServerDb();
     res.json(students[index]);
   } else {
     res.status(404).json({ error: 'Siswa tidak ditemukan' });
@@ -247,6 +249,7 @@ app.put('/api/students/:id', (req, res) => {
 app.delete('/api/students/:id', (req, res) => {
   const { id } = req.params;
   students = students.filter(s => s.id !== id);
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -271,6 +274,7 @@ app.post('/api/users', (req, res) => {
     user: 'MANAGEMENT',
     activity: `Menerbitkan akun login user baru: ${newUser.username} (${newUser.role})`
   });
+  saveServerDb();
   res.json(newUser);
 });
 
@@ -279,6 +283,7 @@ app.put('/api/users/:id', (req, res) => {
   const index = users.findIndex(u => u.id === id);
   if (index !== -1) {
     users[index] = { ...users[index], ...req.body };
+    saveServerDb();
     res.json(users[index]);
   } else {
     res.status(404).json({ error: 'User tidak ditemukan' });
@@ -288,6 +293,7 @@ app.put('/api/users/:id', (req, res) => {
 app.delete('/api/users/:id', (req, res) => {
   const { id } = req.params;
   users = users.filter(u => u.id !== id && u.username !== id);
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -328,7 +334,7 @@ app.post('/api/tutors', (req, res) => {
     };
     users.unshift(newUser);
   }
-
+  saveServerDb();
   res.json(newTutor);
 });
 
@@ -337,6 +343,7 @@ app.put('/api/tutors/:id', (req, res) => {
   const index = tutors.findIndex(t => t.id === id);
   if (index !== -1) {
     tutors[index] = { ...tutors[index], ...req.body };
+    saveServerDb();
     res.json(tutors[index]);
   } else {
     res.status(404).json({ error: 'Tentor tidak ditemukan' });
@@ -346,6 +353,7 @@ app.put('/api/tutors/:id', (req, res) => {
 app.delete('/api/tutors/:id', (req, res) => {
   const { id } = req.params;
   tutors = tutors.filter(t => t.id !== id);
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -397,6 +405,7 @@ app.post('/api/schedules', (req, res) => {
     createdAt: new Date().toISOString().substring(0, 10)
   };
   schedules.unshift(newSch);
+  saveServerDb();
   res.json(newSch);
 });
 
@@ -405,6 +414,7 @@ app.put('/api/schedules/:id', (req, res) => {
   const index = schedules.findIndex(s => s.id === id);
   if (index !== -1) {
     schedules[index] = { ...schedules[index], ...req.body };
+    saveServerDb();
     res.json(schedules[index]);
   } else {
     res.status(404).json({ error: 'Jadwal tidak ditemukan' });
@@ -420,6 +430,7 @@ app.delete('/api/schedules/:id', (req, res) => {
     user: 'MANAGEMENT',
     activity: `Menghapus entri jadwal mengajar ID: ${id}`
   });
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -439,21 +450,57 @@ app.get('/api/attendances', (req, res) => {
 
 app.post('/api/attendances', (req, res) => {
   const { scheduleId, studentId, tutorId, date } = req.body;
-
   const targetDate = date || new Date().toISOString().substring(0, 10);
+  const incomingId = req.body.id || `att-${Date.now()}`;
 
+  // Find if it already exists
+  const existingIndex = attendances.findIndex(a => a.id === incomingId);
+  let oldAtt = null;
+  if (existingIndex !== -1) {
+    oldAtt = attendances[existingIndex];
+  }
+
+  // Revert old attendance impact if it was 'Hadir'
+  if (oldAtt && oldAtt.status === 'Hadir') {
+    // 1. Revert student remaining sessions
+    const stIndex = students.findIndex(s => s.id === oldAtt.studentId);
+    if (stIndex !== -1) {
+      students[stIndex].remainingSessions = (students[stIndex].remainingSessions || 0) + 1;
+      students[stIndex].packageStatus = students[stIndex].remainingSessions <= 0 ? 'Habis' : students[stIndex].remainingSessions <= 2 ? 'Hampir Habis' : 'Aktif';
+    }
+    // 2. Revert finance records associated with oldAtt.id
+    finance = finance.filter(f => f.attendanceId !== oldAtt.id);
+    // 3. Revert tutor salaries
+    const oldMonth = oldAtt.date.substring(0, 7);
+    const salIdx = salaries.findIndex(s => s.tutorId === oldAtt.tutorId && s.monthYear === oldMonth);
+    if (salIdx !== -1) {
+      const sch = schedules.find(sc => sc.id === oldAtt.scheduleId);
+      const tut = tutors.find(t => t.id === oldAtt.tutorId);
+      const honorRate = sch?.sessionRate || tut?.ratePerSession || 40000;
+      salaries[salIdx].totalAttendanceRate = Math.max(0, (salaries[salIdx].totalAttendanceRate || 0) - honorRate);
+      salaries[salIdx].totalSalary = salaries[salIdx].totalAttendanceRate + (salaries[salIdx].cancellationCompensation || 0) + (salaries[salIdx].bonus || 0) - (salaries[salIdx].deductions || 0);
+    }
+  }
+
+  // Create new attendance object
   const newAtt = {
-    id: `att-${Date.now()}`,
+    id: incomingId,
     ...req.body,
     date: targetDate,
     serverTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
   };
-  attendances.unshift(newAtt);
 
-  // Decrement student remaining sessions
-  const stIndex = students.findIndex(s => s.id === req.body.studentId);
-  if (stIndex !== -1 && students[stIndex].remainingSessions > 0) {
-    if (!req.body.status || req.body.status === 'Hadir') {
+  // Update or insert
+  if (existingIndex !== -1) {
+    attendances[existingIndex] = newAtt;
+  } else {
+    attendances.unshift(newAtt);
+  }
+
+  // Apply new attendance impact if status is 'Hadir'
+  if (!newAtt.status || newAtt.status === 'Hadir') {
+    const stIndex = students.findIndex(s => s.id === newAtt.studentId);
+    if (stIndex !== -1 && students[stIndex].remainingSessions > 0) {
       students[stIndex].remainingSessions -= 1;
       if (students[stIndex].remainingSessions <= 0) {
         students[stIndex].packageStatus = 'Habis';
@@ -461,10 +508,7 @@ app.post('/api/attendances', (req, res) => {
         students[stIndex].packageStatus = 'Hampir Habis';
       }
     }
-  }
 
-  // Automatic Real-time Finance & Payroll Recap
-  if (!req.body.status || req.body.status === 'Hadir') {
     const tutor = tutors.find(t => t.id === tutorId);
     const student = students.find(s => s.id === studentId);
     const schedule = schedules.find(sc => sc.id === scheduleId);
@@ -523,6 +567,7 @@ app.post('/api/attendances', (req, res) => {
     }
   }
 
+  saveServerDb();
   res.json(newAtt);
 });
 
@@ -548,6 +593,7 @@ app.delete('/api/attendances/:id', (req, res) => {
         salaries[salIdx].totalSalary = salaries[salIdx].totalAttendanceRate + (salaries[salIdx].cancellationCompensation || 0) + (salaries[salIdx].bonus || 0) - (salaries[salIdx].deductions || 0);
       }
     }
+    saveServerDb();
   }
   res.json({ success: true, message: 'Data absensi berhasil dihapus.' });
 });
@@ -584,6 +630,7 @@ app.post('/api/invoices', (req, res) => {
     revisionNote: req.body.revisionNote
   };
   invoices.unshift(newInv);
+  saveServerDb();
   res.json(newInv);
 });
 
@@ -613,6 +660,7 @@ app.post('/api/invoices/:id/pay', (req, res) => {
       createdAt: new Date().toISOString().substring(0, 10)
     });
 
+    saveServerDb();
     res.json(inv);
   } else {
     res.status(404).json({ error: 'Invoice tidak ditemukan' });
@@ -629,6 +677,7 @@ app.put('/api/invoices/:id', (req, res) => {
       isRevised: true,
       revisedAt: new Date().toISOString().substring(0, 10)
     };
+    saveServerDb();
     res.json(invoices[index]);
   } else {
     res.status(404).json({ error: 'Invoice tidak ditemukan' });
@@ -638,6 +687,7 @@ app.put('/api/invoices/:id', (req, res) => {
 app.delete('/api/invoices/:id', (req, res) => {
   const { id } = req.params;
   invoices = invoices.filter(i => i.id !== id);
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -653,6 +703,7 @@ app.put('/api/finance/:id', (req, res) => {
       isRevised: true,
       revisedAt: new Date().toISOString().substring(0, 10)
     };
+    saveServerDb();
     res.json(finance[index]);
   } else {
     res.status(404).json({ error: 'Data keuangan tidak ditemukan' });
@@ -662,6 +713,7 @@ app.put('/api/finance/:id', (req, res) => {
 app.delete('/api/finance/:id', (req, res) => {
   const { id } = req.params;
   finance = finance.filter(f => f.id !== id);
+  saveServerDb();
   res.json({ success: true });
 });
 
@@ -685,6 +737,7 @@ app.post('/api/clear-finance-spp', (req, res) => {
   finance = [];
   invoices = [];
   salaries = [];
+  saveServerDb();
   res.json({ success: true, message: 'Semua data Keuangan, Invoice SPP, dan Payroll Gaji telah dikosongkan.' });
 });
 
@@ -696,6 +749,7 @@ app.post('/api/finance', (req, res) => {
     createdAt: new Date().toISOString().substring(0, 10)
   };
   finance.unshift(newFin);
+  saveServerDb();
   res.json(newFin);
 });
 
@@ -737,6 +791,7 @@ app.put('/api/salaries/:id/status', (req, res) => {
         createdAt: new Date().toISOString().substring(0, 10)
       });
     }
+    saveServerDb();
     res.json(salaries[index]);
   } else {
     res.status(404).json({ error: 'Gaji tidak ditemukan' });
@@ -753,6 +808,7 @@ app.put('/api/approvals/:id/status', (req, res) => {
     approvals[index].status = status;
     approvals[index].remarks = remarks;
     approvals[index].approvedBy = approvedBy;
+    saveServerDb();
     res.json(approvals[index]);
   } else {
     res.status(404).json({ error: 'Pengajuan tidak ditemukan' });
@@ -768,6 +824,7 @@ app.post('/api/modules', (req, res) => {
     uploadedAt: new Date().toISOString().substring(0, 10)
   };
   modules.unshift(newMod);
+  saveServerDb();
   res.json(newMod);
 });
 
@@ -777,6 +834,7 @@ app.put('/api/settings', (req, res) => {
   if (req.body.settingsList) {
     settings = req.body.settingsList;
   }
+  saveServerDb();
   res.json(settings);
 });
 
@@ -808,6 +866,7 @@ app.post('/api/clear-all-activities-absensi-keuangan', (req, res) => {
     remainingSessions: s.totalPackageSessions !== undefined ? Number(s.totalPackageSessions) : 10,
     packageStatus: 'Aktif'
   }));
+  saveServerDb();
   res.json({ success: true, message: 'Data aktivitas, absensi, dan keuangan berhasil dikosongkan.' });
 });
 
@@ -835,6 +894,7 @@ app.post('/api/clear-all-data', (req, res) => {
     { key: 'AUTO_SYNC_GOOGLE_SHEETS', value: true, description: 'Sinkronisasi Realtime Otomatis ke Google Sheets', category: 'Integrasi' }
   ];
   auditLogs = [];
+  saveServerDb();
   res.json({ success: true, message: 'Semua data ERP telah dikosongkan.' });
 });
 
@@ -862,6 +922,7 @@ app.post('/api/sheets/import', (req, res) => {
   sheetSyncStatus.lastSyncTime = new Date().toISOString();
   sheetSyncStatus.syncStatus = 'Synced';
 
+  saveServerDb();
   res.json({
     success: true,
     message: 'Data berhasil diimpor dari Google Sheets ke database ERP',
