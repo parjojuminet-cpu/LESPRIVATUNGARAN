@@ -828,6 +828,25 @@ app.post('/api/modules', (req, res) => {
   res.json(newMod);
 });
 
+app.put('/api/modules/:id', (req, res) => {
+  const { id } = req.params;
+  const index = modules.findIndex(m => m.id === id);
+  if (index !== -1) {
+    modules[index] = { ...modules[index], ...req.body };
+    saveServerDb();
+    res.json(modules[index]);
+  } else {
+    res.status(404).json({ error: 'Modul tidak ditemukan' });
+  }
+});
+
+app.delete('/api/modules/:id', (req, res) => {
+  const { id } = req.params;
+  modules = modules.filter(m => m.id !== id);
+  saveServerDb();
+  res.json({ success: true });
+});
+
 app.get('/api/settings', (req, res) => res.json(settings));
 
 app.put('/api/settings', (req, res) => {

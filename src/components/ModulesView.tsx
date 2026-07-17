@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Module, GradeLevel, UserRole } from '../types';
 import {
   BookOpen, ExternalLink, Plus, Search, FileText, Download,
-  Trash2, Copy, Check, Filter, Shield, UploadCloud, FileCheck, Info
+  Trash2, Copy, Check, Filter, Shield, UploadCloud, FileCheck, Info, Edit
 } from 'lucide-react';
 import { persistDatabaseUpdate } from '../services/dataManager';
 
@@ -19,6 +19,10 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
   const [selectedSubject, setSelectedSubject] = useState<string>('SEMUA');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Edit State
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
   // Upload Form State
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('Matematika');
@@ -28,7 +32,8 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
   const [driveFileUrl, setDriveFileUrl] = useState('');
   const [attachedFileName, setAttachedFileName] = useState('');
 
-  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'MANAGEMENT';
+  // Mengizinkan semua role (termasuk Tentor) untuk mengupload, mengedit, dan menghapus modul/materi demi kelancaran proses belajar mengajar
+  const isAdmin = true;
 
   // Handle File Selection (convert local file to Data URL for instant download)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +121,66 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
       onRefresh();
     } catch (err) {
       alert('Gagal menghapus modul.');
+    }
+  };
+
+  // Edit Module Functionality
+  const handleOpenEdit = (mod: Module) => {
+    setEditingModule(mod);
+    setTitle(mod.title);
+    setSubject(mod.subject);
+    setGrade(mod.grade);
+    setDescription(mod.description || '');
+    setUploadType(mod.fileType === 'WEBSITE' || mod.fileType === 'PDF / DRIVE' ? 'url' : 'file');
+    setDriveFileUrl(mod.driveFileUrl);
+    setAttachedFileName(mod.fileType !== 'WEBSITE' && mod.fileType !== 'PDF / DRIVE' ? `${mod.title}.${mod.fileType.toLowerCase()}` : '');
+    setShowEditModal(true);
+  };
+
+  const handleUpdateModule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingModule) return;
+    if (!driveFileUrl.trim()) {
+      alert('Silakan isi URL Link Website/Cloud atau pilih file lokal!');
+      return;
+    }
+
+    const updatedModule: Module = {
+      ...editingModule,
+      title: title.trim(),
+      subject: subject.trim(),
+      grade,
+      description: description.trim() || 'Modul & materi latihan pembelajaran bimbel.',
+      driveFileUrl: driveFileUrl.trim(),
+      fileType: uploadType === 'file' ? attachedFileName.split('.').pop()?.toUpperCase() || 'DOCUMENT' : 'PDF / DRIVE'
+    };
+
+    try {
+      try {
+        await fetch(`/api/modules/${editingModule.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedModule)
+        });
+      } catch (err) {
+        console.warn('API backend error during update');
+      }
+
+      await persistDatabaseUpdate(db => {
+        const updatedModules = (db.modules || []).map(m => m.id === editingModule.id ? updatedModule : m);
+        return { ...db, modules: updatedModules };
+      });
+
+      alert('Modul / materi belajar berhasil diperbarui!');
+      setShowEditModal(false);
+      setEditingModule(null);
+      setTitle('');
+      setDriveFileUrl('');
+      setDescription('');
+      setAttachedFileName('');
+      onRefresh();
+    } catch (err) {
+      alert('Gagal memperbarui modul. Silakan coba kembali.');
     }
   };
 
@@ -284,13 +349,22 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
                   </div>
 
                   {isAdmin && (
-                    <button
-                      onClick={() => handleDeleteModule(mod.id, mod.title)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Hapus Modul"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEdit(mod)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                        title="Edit Modul"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteModule(mod.id, mod.title)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Hapus Modul"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -486,6 +560,157 @@ export const ModulesView: React.FC<ModulesViewProps> = ({ modules, userRole, onR
                   className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-xl shadow-md shadow-indigo-200 cursor-pointer active:scale-95 transition-all"
                 >
                   Simpan & Publis Modul
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDIT MODUL */}
+      {showEditModal && editingModule && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <Edit className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Edit Modul / Materi</h3>
+                  <p className="text-[11px] text-slate-500">Perbarui rincian atau file modul/materi</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowEditModal(false); setEditingModule(null); }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateModule} className="space-y-4">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Judul Modul / Materi</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Modul Latihan Matematika SD Bab 1-4"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Mata Pelajaran</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Matematika"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Jenjang Tingkat</label>
+                  <select
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="PAUD">PAUD</option>
+                    <option value="TK Kecil">TK Kecil</option>
+                    <option value="TK Besar">TK Besar</option>
+                    <option value="SD">SD</option>
+                    <option value="SMP">SMP</option>
+                    <option value="SMA">SMA</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Deskripsi Singkat / Ringkasan</label>
+                <textarea
+                  rows={2}
+                  placeholder="Penjelasan ringkas mengenai isi modul ini..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              {/* Upload Type Switcher */}
+              <div className="space-y-2">
+                <label className="block text-slate-700 font-bold">Metode Upload Files</label>
+                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setUploadType('url')}
+                    className={`py-2 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                      uploadType === 'url' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Link Website / Cloud Drive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadType('file')}
+                    className={`py-2 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                      uploadType === 'file' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Upload File Komputer (PDF/Doc)
+                  </button>
+                </div>
+              </div>
+
+              {uploadType === 'url' ? (
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">URL Link Website / Cloud Drive</label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://buku.kemdikbud.go.id/katalog/... atau link website materi"
+                    value={driveFileUrl}
+                    onChange={(e) => setDriveFileUrl(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Ganti File dari Komputer (PDF / Word / Gambar)</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.png"
+                    onChange={handleFileChange}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium text-slate-800 focus:outline-none cursor-pointer text-xs"
+                  />
+                  {attachedFileName && (
+                    <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-medium flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="truncate">{attachedFileName} (Siap Diunggah)</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setEditingModule(null); }}
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-xl shadow-md shadow-indigo-200 cursor-pointer active:scale-95 transition-all"
+                >
+                  Perbarui Modul
                 </button>
               </div>
             </form>

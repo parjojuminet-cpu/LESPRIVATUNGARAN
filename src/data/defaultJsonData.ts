@@ -17,9 +17,9 @@ export const DEFAULT_JSON_USERS: User[] = [
   },
   {
     "id": "usr_ttr_001",
-    "username": "dewi",
-    "passwordHash": "dewi111",
-    "name": "Dewi Ayu R.",
+    "username": "desti",
+    "passwordHash": "desti111",
+    "name": "Desti Ayu R.",
     "role": "TENTOR",
     "tutorId": "ttr_001",
     "status": "Aktif",
@@ -163,7 +163,7 @@ export const DEFAULT_JSON_USERS: User[] = [
 export const DEFAULT_JSON_TUTORS: Tutor[] = [
   {
     "id": "ttr_001",
-    "name": "Dewi Ayu R.",
+    "name": "Desti Ayu R.",
     "gender": "Perempuan",
     "address": "Griya Ungaran Residence, Jl. Mentawai 1 No. 45 Ungaran",
     "wa": "0812-3456-7890",
